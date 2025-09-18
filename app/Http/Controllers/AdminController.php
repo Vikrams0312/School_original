@@ -26,20 +26,20 @@ class AdminController extends Controller {
             'password' => sha1($password)
         ];
         // Retrieve the user data
-            $user = DB::table('teachers')
-        ->join('designations', 'teachers.designation_id', '=', 'designations.id')
-        ->select('teachers.*', 'designations.designation as designation_name')
-        ->where('teachers.email', $email)
-        ->where('teachers.password', sha1($password))
-        ->first();
-           
+        $user = DB::table('teachers')
+                ->join('designations', 'teachers.designation_id', '=', 'designations.id')
+                ->select('teachers.*', 'designations.designation as designation_name')
+                ->where('teachers.email', $email)
+                ->where('teachers.password', sha1($password))
+                ->first();
+
         // Check if the user exists and verify the password
         if ($user && $user->password === sha1($password)) { // Ideally, use Hash::check for hashed passwords
             $data = [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_name' => $user->name,
-                'user_designation'=>$user->designation_name
+                'user_designation' => $user->designation_name
             ];
             $req->session()->put($data);
             return redirect('/dashboard');
@@ -52,6 +52,71 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
+
+    public function createExams() {
+        $standards = DB::table('groups')
+                ->select(DB::raw('MIN(id) as id'), 'standard')
+                ->groupBy('standard')
+                ->orderBy('standard')
+                ->get();
+        return view('admin/examList/create-exams', compact('standards'));
+    }
+
+    public function saveExams(Request $req) {
+        $req->validate([
+            'standard' => 'required',
+            'exam_name' => 'required|string|max:255',
+            'academic_year' => 'required|string|regex:/^\d{4}-\d{4}$/', // Example: 2025-2026
+        ]);
+        // Insert into DB
+        DB::table('exams')->insert([
+            'standard' => $req->standard,
+            'exam_name' => $req->exam_name,
+            'academic_year' => $req->academic_year
+        ]);
+
+        return redirect('/create-exams')->with('success', 'Exam created successfully!');
+    }
+
+    public function listExams() {
+        $exams = DB::table('exams')->orderBy('standard')->get();
+        return view('admin.examList.list-exams', compact('exams'));
+    }
+
+    public function deleteExams($id) {
+        DB::table('exams')->where('id', $id)->delete();
+        return redirect('/list-exams')->with('success', 'Exam deleted successfully!');
+    }
+    // Show edit form
+public function editExams($id)
+{
+    $exam = DB::table('exams')->where('id', $id)->first();
+            $standards = DB::table('groups')
+                ->select(DB::raw('MIN(id) as id'), 'standard')
+                ->groupBy('standard')
+                ->orderBy('standard')
+                ->get(); // assuming you have standards table
+    return view('admin.examList.edit-exams', compact('exam', 'standards'));
+    }
+
+// Update record
+public function updateExams(Request $req, $id)
+{
+    $req->validate([
+        'standard'      => 'required',
+        'exam_name'     => 'required|string|max:255',
+        'academic_year' => 'required|string|regex:/^\d{4}-\d{4}$/',
+    ]);
+
+    DB::table('exams')->where('id', $id)->update([
+        'standard'      => $req->standard,
+        'exam_name'     => $req->exam_name,
+        'academic_year' => $req->academic_year
+        
+    ]);
+
+    return redirect('/list-exams')->with('success', 'Exam updated successfully!');
+}
 
     public function createDesignation() {
         return view('admin/designation/create-designation');
@@ -363,7 +428,7 @@ class AdminController extends Controller {
             'aadhar_number' => $req->input('aadhar_number'),
             'emies_number' => $req->input('emies_number'),
             'communication_address' => $req->input('communication_address'),
-            'dob' =>date('Y-m-d', strtotime( $req->input('dob'))),
+            'dob' => date('Y-m-d', strtotime($req->input('dob'))),
             'standard' => $req->input('standard'),
             'section' => $req->input('section'),
             'gender' => $req->input('gender'),
@@ -385,65 +450,63 @@ class AdminController extends Controller {
         }
     }
 
-public function retriveStudent(Request $request)
-{
-    $teacher_id = session('user_id'); // or use auth()->id() if using Laravel auth
+    public function retriveStudent(Request $request) {
+        $teacher_id = session('user_id'); // or use auth()->id() if using Laravel auth
+        // Get teacher's subject allotments
+        $allotments = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->select('standard', 'group_name_id', 'section', 'subject_id')
+                ->distinct()
+                ->get();
 
-    // Get teacher's subject allotments
-    $allotments = DB::table('subject_allotments')
-        ->where('teacher_id', $teacher_id)
-        ->select('standard', 'group_name_id', 'section', 'subject_id')
-        ->distinct()
-        ->get();
+        // Get all available standards for this teacher
+        $standards = $allotments->pluck('standard')->unique()->sortDesc()->values();
+        $default_standard = $standards->first();
 
-    // Get all available standards for this teacher
-    $standards = $allotments->pluck('standard')->unique()->sortDesc()->values();
-    $default_standard = $standards->first();
+        // Get allotments for the default standard
+        $default_allotments = $allotments->where('standard', $default_standard);
 
-    // Get allotments for the default standard
-    $default_allotments = $allotments->where('standard', $default_standard);
+        // Extract dropdown values
+        $sections = $default_allotments->pluck('section')->unique();
+        $groups = $default_allotments->pluck('group_name_id')->unique()->filter()->values();
+        $subjects = $default_allotments->pluck('subject_id')->unique();
 
-    // Extract dropdown values
-    $sections = $default_allotments->pluck('section')->unique();
-    $groups = $default_allotments->pluck('group_name_id')->unique()->filter()->values();
-    $subjects = $default_allotments->pluck('subject_id')->unique();
+        // Fetch group & subject list for dropdowns
+        $group_list = DB::table('groups')->whereIn('id', $groups)->get();
+        $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
 
-    // Fetch group & subject list for dropdowns
-    $group_list = DB::table('groups')->whereIn('id', $groups)->get();
-    $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+        // Get selected values from request or set defaults
+        $selected_standard = $request->input('standard', $default_standard);
+        $selected_section = $request->input('section', $sections->first() ?? '');
+        $selected_group = $request->input('group', $groups->first() ?? null);
+        $selected_subject = $request->input('subject', $subjects->first() ?? null);
 
-    // Get selected values from request or set defaults
-    $selected_standard = $request->input('standard', $default_standard);
-    $selected_section  = $request->input('section', $sections->first() ?? '');
-    $selected_group    = $request->input('group', $groups->first() ?? null);
-    $selected_subject  = $request->input('subject', $subjects->first() ?? null);
+        // Build student query
+        $query = DB::table('students')
+                ->leftJoin('groups', 'students.group_id', '=', 'groups.id')
+                ->select('students.*', 'groups.group_short_name')
+                ->where('students.standard', $selected_standard)
+                ->where('students.section', $selected_section);
 
-    // Build student query
-    $query = DB::table('students')
-        ->leftJoin('groups', 'students.group_id', '=', 'groups.id')
-        ->select('students.*', 'groups.group_short_name')
-        ->where('students.standard', $selected_standard)
-        ->where('students.section', $selected_section);
+        if ($selected_group) {
+            $query->where('students.group_id', $selected_group);
+        }
 
-    if ($selected_group) {
-        $query->where('students.group_id', $selected_group);
+        $student = $query->get();
+
+        // Return view with all required data
+        return view('admin.student.retrive-student', [
+            'standards' => $standards,
+            'sections' => $sections,
+            'groups' => $group_list,
+            'subjects' => $subject_list,
+            'student' => $student,
+            'selected_standard' => $selected_standard,
+            'selected_section' => $selected_section,
+            'selected_group' => $selected_group,
+            'selected_subject' => $selected_subject,
+        ]);
     }
-
-    $student = $query->get();
-
-    // Return view with all required data
-    return view('admin.student.retrive-student', [
-        'standards' => $standards,
-        'sections'  => $sections,
-        'groups'    => $group_list,
-        'subjects'  => $subject_list,
-        'student'   => $student,
-        'selected_standard' => $selected_standard,
-        'selected_section'  => $selected_section,
-        'selected_group'    => $selected_group,
-        'selected_subject'  => $selected_subject,
-    ]);
-}
 
     public function editStudent($id) {
         $result['group'] = DB::table('groups')->get();
@@ -551,7 +614,7 @@ public function retriveStudent(Request $request)
             'join_date' => 'required|date',
             'teacher_email' => 'required|email'
         ]);
-      
+
         // Insert into teachers table
         $teacher_id = DB::table('teachers')->insertGetId([
             'name' => strtoupper($req->teacher_name),
@@ -568,23 +631,22 @@ public function retriveStudent(Request $request)
         return redirect('/create-teacher')->with('success', 'Teacher created successfully.');
     }
 
-public function retriveTeacher(Request $request) {
-    $designation_id = $request->input('designation');
+    public function retriveTeacher(Request $request) {
+        $designation_id = $request->input('designation');
 
-    $teacher = collect(); // empty collection by default
-    if ($designation_id) {
-        $teacher = DB::table('teachers')
-            ->leftJoin('designations', 'teachers.designation_id', '=', 'designations.id')
-            ->select('teachers.*', 'designations.designation as designation_name')
-            ->where('teachers.designation_id', $designation_id)
-            ->get();
+        $teacher = collect(); // empty collection by default
+        if ($designation_id) {
+            $teacher = DB::table('teachers')
+                    ->leftJoin('designations', 'teachers.designation_id', '=', 'designations.id')
+                    ->select('teachers.*', 'designations.designation as designation_name')
+                    ->where('teachers.designation_id', $designation_id)
+                    ->get();
+        }
+
+        $designations = DB::table('designations')->get();
+
+        return view('admin.teacher.retrive-teacher', compact('teacher', 'designations', 'designation_id'));
     }
-
-    $designations = DB::table('designations')->get();
-
-    return view('admin.teacher.retrive-teacher', compact('teacher', 'designations', 'designation_id'));
-}
-
 
     public function deleteTeacher($id) {
         $result1 = DB::table('teachers')->where('id', $id)->delete();

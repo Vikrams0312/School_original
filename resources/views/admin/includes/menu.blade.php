@@ -90,6 +90,12 @@ $url_segment = Request::segment(1);
                 <div data-i18n="Designation">Designation Lists</div>
             </a>
         </li>
+                <li class="menu-item {{ $url_segment == 'create-exams' ? 'active' : '' }}">
+            <a href="{{ url('/create-exams') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-id-card"></i>
+                <div data-i18n="createexams">Create Exams</div>
+            </a>
+        </li>
         <!-- Account Settings -->
         <li class="menu-item {{ in_array($url_segment, ['account-settings-account', 'account-settings-notifications', 'account-settings-connections']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">

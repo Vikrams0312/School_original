@@ -3,8 +3,7 @@
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
-
-Route::view('/myform','admin/payment/myform');
+Route::view('/myform', 'admin/payment/myform');
 Route::view('/', 'admin/login/login');
 Route::view('/login', 'admin/login/login')->name('login');
 Route::get('/logout', [AdminController::class, 'logout']);
@@ -29,6 +28,13 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::post('/update-student', [AdminController::class, 'updateStudent']);
     Route::get('/deleteStudent/{id}', [AdminController::class, 'deleteStudent']);
 
+    Route::get('/create-exams', [AdminController::class, 'createExams']);
+    Route::post('/save-exams', [AdminController::class, 'saveExams']);
+    Route::get('/list-exams', [AdminController::class, 'listExams']);
+    Route::get('/edit-exams/{id}', [AdminController::class, 'editExams']);
+    Route::post('/update-exams/{id}', [AdminController::class, 'updateExams']);
+    Route::get('/delete-exams/{id}', [AdminController::class, 'deleteExams']);
+
     Route::get('/create-subject', [AdminController::class, 'subjectForm']);
     Route::post('/save-subject', [AdminController::class, 'createSubject']);
     Route::get('/subject-list', [AdminController::class, 'retriveSubject']);
@@ -44,13 +50,12 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::get('/deleteTeacher/{id}', [AdminController::class, 'deleteTeacher']);
 
     //teacher subject allotment
-    Route::get('/create-subject-allotment', [AdminController::class,'subjectAllotment']);
+    Route::get('/create-subject-allotment', [AdminController::class, 'subjectAllotment']);
     Route::post('/save-subject-allotments', [AdminController::class, 'saveSubjectAllotments']);
     Route::get('/subject-allotment-list/{teacher_id}', [AdminController::class, 'subjectAllotmentList']);
     Route::get('/edit-subject-allotment/{teacherId}', [AdminController::class, 'subjectAllotmentEdit']);
     Route::post('/update-subject-allotment', [AdminController::class, 'subjectAllotmentUpdate']);
     Route::get('/subjectAllotmentDelete/{id}', [AdminController::class, 'subjectAllotmentDelete']);
-
 
     //designation
     Route::get('/create-designation', [AdminController::class, 'createDesignation']);
@@ -60,8 +65,6 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::get('/edit-designation/{id}', [AdminController::class, 'editDesignation']);
     Route::post('/update-designation/{id}', [AdminController::class, 'updateDesignation']);
 });
-
-
 
 //Route::get('/createStudentFees', [AdminController::class, 'studentfeesForm']);
 //Route::post('/saveStudentFees', [AdminController::class, 'createStudentFees']);

@@ -19,20 +19,16 @@
         <div class="layout-wrapper layout-content-navbar">
             <div class="layout-container">
                 <!-- Menu -->
-
                 @include('admin.includes.menu')
                 <!-- / Menu -->
                 <!-- Layout container -->
                 <div class="layout-page">
                     <!-- Navbar -->
                     @include('admin.includes.nav')
-
                     <!-- / Navbar -->
-
                     <!-- Content wrapper -->
                     <div class="content-wrapper">
                         <!-- Content -->
-
                         <div class="container-xxl flex-grow-1 container-p-y">
                             <h4 class="fw-bold py-1 mb-1"> Student</h4>
 
@@ -41,69 +37,60 @@
                                 <h5 class="card-header">Student list</h5>
                                 <div class="card-body">
                                     <form method="GET" action="{{ url('/student-list') }}">
-    <div class="row mb-3">
-        <!-- Standard Dropdown -->
-        <div class="col-md-2">
-            <label for="standard" class="form-label">Class</label>
-            <select name="standard" id="standard" class="form-select">
-                @foreach($standards as $std)
-                <option value="{{ $std }}" {{ $std == $selected_standard ? 'selected' : '' }}>
-                     {{ $std }}
-                </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Section Dropdown -->
-        <div class="col-md-2">
-            <label for="section" class="form-label">Section</label>
-            <select name="section" id="section" class="form-select">
-                @foreach($sections as $sec)
-                <option value="{{ $sec }}" {{ $sec == $selected_section ? 'selected' : '' }}>
-                    {{ $sec }}
-                </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Group Dropdown -->
-        <div class="col-md-3">
-            <label for="group" class="form-label">Group</label>
-            <select name="group" id="group" class="form-select">
-                <option value="">Select Group</option>
-                @foreach($groups as $grp)
-                <option value="{{ $grp->id }}" {{ $grp->id == $selected_group ? 'selected' : '' }}>
-                    {{ $grp->group_short_name }}
-                </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Subject Dropdown -->
-        <div class="col-md-3">
-            <label for="subject" class="form-label">Subject</label>
-            <select name="subject" id="subject" class="form-select">
-                @foreach($subjects as $subj)
-                <option value="{{ $subj->id }}" {{ $subj->id == $selected_subject ? 'selected' : '' }}>
-                    {{ $subj->subject_name }}
-                </option>
-                @endforeach
-            </select>
-        </div>
-         <!-- Submit button -->
-   
-        <div class="col-md-2 mt-4">
-            <button type="submit" class="btn btn-primary">
-               Submit
-            </button>
-        </div>
-  
-    </div>
-
-   
-</form>
-
-
+                                        <div class="row mb-3">
+                                            <!-- Standard Dropdown -->
+                                            <div class="col-md-2">
+                                                <label for="standard" class="form-label">Class</label>
+                                                <select name="standard" id="standard" class="form-select">
+                                                    @foreach($standards as $std)
+                                                    <option value="{{ $std }}" {{ $std == $selected_standard ? 'selected' : '' }}>
+                                                        {{ $std }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <!-- Section Dropdown -->
+                                            <div class="col-md-2">
+                                                <label for="section" class="form-label">Section</label>
+                                                <select name="section" id="section" class="form-select">
+                                                    @foreach($sections as $sec)
+                                                    <option value="{{ $sec }}" {{ $sec == $selected_section ? 'selected' : '' }}>
+                                                        {{ $sec }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <!-- Group Dropdown -->
+                                            <div class="col-md-3">
+                                                <label for="group" class="form-label">Group</label>
+                                                <select name="group" id="group" class="form-select">
+                                                    <option value="">Select Group</option>
+                                                    @foreach($groups as $grp)
+                                                    <option value="{{ $grp->id }}" {{ $grp->id == $selected_group ? 'selected' : '' }}>
+                                                        {{ $grp->group_short_name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <!-- Subject Dropdown -->
+                                            <div class="col-md-3">
+                                                <label for="subject" class="form-label">Subject</label>
+                                                <select name="subject" id="subject" class="form-select">
+                                                    @foreach($subjects as $subj)
+                                                    <option value="{{ $subj->id }}" {{ $subj->id == $selected_subject ? 'selected' : '' }}>
+                                                        {{ $subj->subject_name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <!-- Submit button -->
+                                            <div class="col-md-2 mt-4">
+                                                <button type="submit" class="btn btn-primary">
+                                                    Submit
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
                                     <div class="table-responsive text-nowrap">
                                         <table class="table table-bordered">
                                             <thead>
@@ -133,7 +120,6 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-
                                                 @if($student && $student->isNotEmpty())
                                                 @foreach($student as $d)
                                                 <tr>
@@ -156,7 +142,6 @@
                                                             </div>
                                                         </div>
                                                     </td>
-
                                                     <td>{{$d->register_number}}</td>
                                                     <td>{{$d->name}}</td>
                                                     <td>{{$d->father_name}}</td>
@@ -187,15 +172,11 @@
                                 </div>
                             </div>
                             <!--/ Bordered Table -->
-
-
                         </div>
                         <!-- / Content -->
-
                         <!-- Footer -->
                         @include('admin.includes.footer')
                         <!-- / Footer -->
-
                         <div class="content-backdrop fade"></div>
                     </div>
                     <!-- Content wrapper -->
@@ -207,9 +188,7 @@
             <div class="layout-overlay layout-menu-toggle"></div>
         </div>
         <!-- / Layout wrapper -->
-
         @include('admin.includes.floatmsg')
-
         <!-- Core JS -->
         @include('admin.includes.formjs')
     </body>
