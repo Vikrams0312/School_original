@@ -40,6 +40,70 @@
                             <div class="card">
                                 <h5 class="card-header">Student list</h5>
                                 <div class="card-body">
+                                    <form method="GET" action="{{ url('/student-list') }}">
+    <div class="row mb-3">
+        <!-- Standard Dropdown -->
+        <div class="col-md-2">
+            <label for="standard" class="form-label">Class</label>
+            <select name="standard" id="standard" class="form-select">
+                @foreach($standards as $std)
+                <option value="{{ $std }}" {{ $std == $selected_standard ? 'selected' : '' }}>
+                     {{ $std }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Section Dropdown -->
+        <div class="col-md-2">
+            <label for="section" class="form-label">Section</label>
+            <select name="section" id="section" class="form-select">
+                @foreach($sections as $sec)
+                <option value="{{ $sec }}" {{ $sec == $selected_section ? 'selected' : '' }}>
+                    {{ $sec }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Group Dropdown -->
+        <div class="col-md-3">
+            <label for="group" class="form-label">Group</label>
+            <select name="group" id="group" class="form-select">
+                <option value="">Select Group</option>
+                @foreach($groups as $grp)
+                <option value="{{ $grp->id }}" {{ $grp->id == $selected_group ? 'selected' : '' }}>
+                    {{ $grp->group_short_name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Subject Dropdown -->
+        <div class="col-md-3">
+            <label for="subject" class="form-label">Subject</label>
+            <select name="subject" id="subject" class="form-select">
+                @foreach($subjects as $subj)
+                <option value="{{ $subj->id }}" {{ $subj->id == $selected_subject ? 'selected' : '' }}>
+                    {{ $subj->subject_name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+         <!-- Submit button -->
+   
+        <div class="col-md-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+               Submit
+            </button>
+        </div>
+  
+    </div>
+
+   
+</form>
+
+
                                     <div class="table-responsive text-nowrap">
                                         <table class="table table-bordered">
                                             <thead>
@@ -70,7 +134,7 @@
                                             </thead>
                                             <tbody>
 
-                                                @if(count($student)>0)
+                                                @if($student && $student->isNotEmpty())
                                                 @foreach($student as $d)
                                                 <tr>
                                                     <td>
@@ -150,6 +214,5 @@
         @include('admin.includes.formjs')
     </body>
 </html>
-
 
 

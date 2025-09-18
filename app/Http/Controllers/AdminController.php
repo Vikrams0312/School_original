@@ -36,6 +36,7 @@ class AdminController extends Controller {
         // Check if the user exists and verify the password
         if ($user && $user->password === sha1($password)) { // Ideally, use Hash::check for hashed passwords
             $data = [
+                'user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_name' => $user->name,
                 'user_designation'=>$user->designation_name
@@ -334,7 +335,7 @@ class AdminController extends Controller {
             'student_name' => 'required|string|min:3|max:50',
             'mobile' => 'required|numeric|digits:10',
             'dob' => 'required|date|before:today',
-            'academic_year' => 'required|numeric',
+            'academic_year' => 'required',
             'gender' => 'required|string'
                 ], [
             'register_number.required' => 'Register number is required.',
@@ -348,8 +349,6 @@ class AdminController extends Controller {
             'dob.required' => 'Date of birth is required.',
             'dob.date' => 'Invalid date format.',
             'dob.before' => 'Date of birth must be before today.',
-            'academic_year.required' => 'Academic year is required.',
-            'academic_year.numeric' => 'Academic year must be numeric.',
             'gender.required' => 'Gender is required.'
         ]);
 
@@ -364,11 +363,11 @@ class AdminController extends Controller {
             'aadhar_number' => $req->input('aadhar_number'),
             'emies_number' => $req->input('emies_number'),
             'communication_address' => $req->input('communication_address'),
-            'dob' => $req->input('dob'),
+            'dob' =>date('Y-m-d', strtotime( $req->input('dob'))),
             'standard' => $req->input('standard'),
             'section' => $req->input('section'),
             'gender' => $req->input('gender'),
-            'join_date' => $req->input('joined_date'),
+            'join_date' => date('Y-m-d', strtotime($req->input('joined_date'))),
             'email' => $req->input('student_email'),
             'academic_year' => $req->input('academic_year')
         ];
@@ -386,15 +385,65 @@ class AdminController extends Controller {
         }
     }
 
-    public function retriveStudent() {
-        $result['student'] = DB::table('students')
-                ->leftJoin('groups', 'students.group_id', '=', 'groups.id')
-                ->select('students.*', 'groups.group_short_name')
-                ->get();
+public function retriveStudent(Request $request)
+{
+    $teacher_id = session('user_id'); // or use auth()->id() if using Laravel auth
 
-        //dd($result);
-        return view('admin/student/retrive-student', $result);
+    // Get teacher's subject allotments
+    $allotments = DB::table('subject_allotments')
+        ->where('teacher_id', $teacher_id)
+        ->select('standard', 'group_name_id', 'section', 'subject_id')
+        ->distinct()
+        ->get();
+
+    // Get all available standards for this teacher
+    $standards = $allotments->pluck('standard')->unique()->sortDesc()->values();
+    $default_standard = $standards->first();
+
+    // Get allotments for the default standard
+    $default_allotments = $allotments->where('standard', $default_standard);
+
+    // Extract dropdown values
+    $sections = $default_allotments->pluck('section')->unique();
+    $groups = $default_allotments->pluck('group_name_id')->unique()->filter()->values();
+    $subjects = $default_allotments->pluck('subject_id')->unique();
+
+    // Fetch group & subject list for dropdowns
+    $group_list = DB::table('groups')->whereIn('id', $groups)->get();
+    $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+
+    // Get selected values from request or set defaults
+    $selected_standard = $request->input('standard', $default_standard);
+    $selected_section  = $request->input('section', $sections->first() ?? '');
+    $selected_group    = $request->input('group', $groups->first() ?? null);
+    $selected_subject  = $request->input('subject', $subjects->first() ?? null);
+
+    // Build student query
+    $query = DB::table('students')
+        ->leftJoin('groups', 'students.group_id', '=', 'groups.id')
+        ->select('students.*', 'groups.group_short_name')
+        ->where('students.standard', $selected_standard)
+        ->where('students.section', $selected_section);
+
+    if ($selected_group) {
+        $query->where('students.group_id', $selected_group);
     }
+
+    $student = $query->get();
+
+    // Return view with all required data
+    return view('admin.student.retrive-student', [
+        'standards' => $standards,
+        'sections'  => $sections,
+        'groups'    => $group_list,
+        'subjects'  => $subject_list,
+        'student'   => $student,
+        'selected_standard' => $selected_standard,
+        'selected_section'  => $selected_section,
+        'selected_group'    => $selected_group,
+        'selected_subject'  => $selected_subject,
+    ]);
+}
 
     public function editStudent($id) {
         $result['group'] = DB::table('groups')->get();

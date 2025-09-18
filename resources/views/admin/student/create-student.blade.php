@@ -192,7 +192,7 @@
                                                             <span id="basic-icon-default-fullname2" class="input-group-text"
                                                                   ><i class="bx bx-user"></i
                                                                 ></span>
-                                                            <select type="text" class="form-select" name="standard" required=""/>
+                                                            <select  class="form-select" name="standard" required>
                                                             <option >SELECT STANDARD</option>                                                                                                                        
                                                             @foreach ($standards as $standard)
                                                             <option value="{{ $standard->standard }}">{{ $standard->standard }}</option>
@@ -212,7 +212,7 @@
                                                             <span id="basic-icon-default-fullname2" class="input-group-text">
                                                                 <i class="bx bx-user"></i>
                                                             </span>
-                                                            <select class="form-select" name="section" required="">
+                                                            <select class="form-select" name="section" required>
                                                                 <option value="">SELECT SECTION</option>
                                                                 @php
                                                                 //Generate an array of letters A to Z
@@ -228,21 +228,7 @@
                                                         <span class="text-danger">{{ $message }}</span>
                                                         @enderror
                                                     </div>
-                                                </div><style>
-                                                    option{
-                                                        display: block;
-                                                        width: 100%;
-                                                        padding: 0.532rem 1.25rem;
-                                                        clear: both;
-                                                        font-weight: 400 !important;
-                                                       
-                                                        text-align: inherit;
-                                                        white-space: nowrap;
-                                                      
-                                                        border: 0;
-                                                        margin: 20px !important;
-                                                    }
-                                                </style>
+                                                </div>
 
                                                 <div class="row mb-3">
                                                     <label class="col-sm-2 col-form-label" for="basic-icon-default-fullname">Group</label>
@@ -251,7 +237,7 @@
                                                             <span id="basic-icon-default-fullname2" class="input-group-text"
                                                                   ><i class="bx bx-user"></i
                                                                 ></span>
-                                                            <select type="text" class="form-select" name="group_id" />
+                                                            <select  class="form-select" name="group_id">
                                                             <option value="">SELECT</option>
                                                             @foreach($groupShortNames as $dt)                                                            
                                                             <option value="{{$dt->id}}">{{$dt->group_short_name}}</option>                                                           
@@ -401,7 +387,6 @@
                                                             <input
                                                                 type="text"
                                                                 class="form-control join_date"
-                                                                
                                                                 value="{{old('dob')}}"
                                                                 name="dob"
                                                                 required
@@ -426,7 +411,6 @@
                                                             <input
                                                                 type="text"
                                                                 class="form-control"                                                                
-                                                                
                                                                 value="{{old('academic_year')}}"
                                                                 name="academic_year"
                                                                 id="academic_year"
@@ -435,10 +419,7 @@
                                                                 aria-label="Enter academic year "
                                                                 aria-describedby="basic-icon-default-fullname2"                                                               
                                                                 />
-                                                        </div>
-                                                        @error('academic_year_from')
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                        @enderror
+                                                        </div>  
                                                     </div>
                                                 </div>
 
@@ -477,7 +458,6 @@
                                                                 class="form-control"
                                                                 name="communication_address"
                                                                 id="communication-address"
-
                                                                 placeholder="Enter Communication Address"
                                                                 aria-label="Enter Communication Address"
                                                                 aria-describedby="basic-icon-default-fullname2"
@@ -488,8 +468,7 @@
                                                         <span class="text-danger">{{ $message }}</span>
                                                         @enderror
                                                     </div>
-                                                </div>   
-                                               
+                                                </div>  
                                                 <div class="row justify-content-end">
                                                     <div class="col-sm-10">
                                                         <button type="submit" class="btn btn-info">Save</button>
@@ -525,11 +504,6 @@
         <!-- Core JS -->
         @include('admin.includes.formjs')
         
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/3.3.4/jquery.inputmask.bundle.min.js"></script>
-
-        <script>
-
-</script>
     </body>
 </html>
 

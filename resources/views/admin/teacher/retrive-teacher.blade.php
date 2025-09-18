@@ -37,8 +37,8 @@
                             <h4 class="fw-bold py-2 mb-2">Employee List</h4>
 
                             <div class="mb-2 col-md-4 d-flex">
-                                <form action="{{ url('/teacher-list') }}" method="GET" class="mb-2 d-flex">
-                                    @csrf
+                                <form action="{{ url('/teacher-list') }}" class="mb-2 d-flex">
+                                  
                                     <select name="designation" class="form-select" required>
                                         <option value="">-- Select designation --</option>
                                         @foreach($designations as $designation)
