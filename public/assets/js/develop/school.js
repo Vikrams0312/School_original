@@ -686,3 +686,14 @@ function applyDateMask() {
 $(document).ready(function(){
     applyDateMask();
 });
+ function toggleGroup() {
+                let standard = document.getElementById("standard").value;
+                let group = document.getElementById("group");
+
+                if (parseInt(standard) <= 10) {
+                    group.disabled = true;
+                    group.value = ""; // clear selection
+                } else {
+                    group.disabled = false;
+                }
+            }

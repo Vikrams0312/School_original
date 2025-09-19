@@ -52,6 +52,105 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
+public function createMarkTable(Request $request)
+{
+    $standard = $request->input('standard');   // selected class
+    $groupId    = $request->input('group');      // selected group (for 11, 12)
+    $year     = $request->input('academic_year'); // selected academic year
+    $subjects = $request->input('subjects');   // array of subject names
+
+    // 🔹 Sanitize year for table name
+    $yearSafe = str_replace(['-', ' '], '_', $year);
+
+       $groupShort = null;
+    if ($standard > 10 && $groupId) {
+        $groupShort = DB::table('groups')
+            ->where('id', $groupId)
+            ->value('group_short_name'); // fetch only short name
+    }
+
+    // 🔹 Build table name
+    if ($standard <= 10) {
+        $tableName = "mark_{$standard}_{$yearSafe}";
+    } else {
+        $tableName = "mark_{$standard}_{$groupShort}_{$yearSafe}";
+    }
+
+    // 🔹 Check if table already exists
+    if (\Schema::hasTable($tableName)) {
+        return back()->with('error', "Table $tableName already exists.");
+    }
+
+    // 🔹 Start CREATE TABLE query
+    $query = "CREATE TABLE `$tableName` (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        regno INT,
+        standard INT,
+        section VARCHAR(2),";
+
+    // 🔹 Add subject columns dynamically
+    foreach ($subjects as $sub) {
+        $colName = strtolower(str_replace(' ', '_', $sub)); // subject is string
+        $query .= " `$colName` INT,";
+    }
+
+    // 🔹 Add fixed columns
+    $query .= "
+        total INT,
+        student_rank INT,
+        exam_id INT,
+        updated_at DATETIME,
+        editing_status INT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
+    // 🔹 Run query
+    \DB::statement($query);
+
+    return back()->with('success', "Table $tableName created successfully.");
+}
+
+
+    public function marksheet(Request $request) {
+        $standards = DB::table('groups')
+                ->select(DB::raw('MIN(id) as id'), 'standard')
+                ->groupBy('standard')
+                ->orderBy('standard')
+                ->get();
+
+        $groups = DB::table('groups')
+                ->select(DB::raw('MIN(id) as id'), 'group_short_name')
+                ->whereNotNull('group_short_name')
+                ->groupBy('group_short_name')
+                ->orderBy('group_short_name')
+                ->get();
+        $academic_year = DB::table('students')
+                ->select('academic_year')
+                ->distinct()
+                ->get();
+        $selected_standard = $request->get('standard');
+        $selected_group = $request->get('group');
+
+        $subjects = collect(); // default empty
+
+        if ($selected_standard) {
+            if ($selected_standard <= 10) {
+                // fetch subjects for classes 1–10
+                $subjects = DB::table('subjects')
+                        ->where('standard', $selected_standard)
+                        ->get();
+            } else if ($selected_standard >= 11 && $selected_group) {
+                // fetch subjects for 11,12 with group
+                $subjects = DB::table('subjects')
+                        ->where('standard', $selected_standard)
+                        ->where('group_id', $selected_group)
+                        ->get();
+            }
+        }
+        //dd($acdemic_year);
+        return view('admin.mark.marksheet', compact(
+                        'standards', 'groups', 'selected_standard', 'selected_group', 'subjects','academic_year'
+        ));
+    }
 
     public function createExams() {
         $standards = DB::table('groups')
@@ -87,36 +186,34 @@ class AdminController extends Controller {
         DB::table('exams')->where('id', $id)->delete();
         return redirect('/list-exams')->with('success', 'Exam deleted successfully!');
     }
+
     // Show edit form
-public function editExams($id)
-{
-    $exam = DB::table('exams')->where('id', $id)->first();
-            $standards = DB::table('groups')
+    public function editExams($id) {
+        $exam = DB::table('exams')->where('id', $id)->first();
+        $standards = DB::table('groups')
                 ->select(DB::raw('MIN(id) as id'), 'standard')
                 ->groupBy('standard')
                 ->orderBy('standard')
                 ->get(); // assuming you have standards table
-    return view('admin.examList.edit-exams', compact('exam', 'standards'));
+        return view('admin.examList.edit-exams', compact('exam', 'standards'));
     }
 
 // Update record
-public function updateExams(Request $req, $id)
-{
-    $req->validate([
-        'standard'      => 'required',
-        'exam_name'     => 'required|string|max:255',
-        'academic_year' => 'required|string|regex:/^\d{4}-\d{4}$/',
-    ]);
+    public function updateExams(Request $req, $id) {
+        $req->validate([
+            'standard' => 'required',
+            'exam_name' => 'required|string|max:255',
+            'academic_year' => 'required|string|regex:/^\d{4}-\d{4}$/',
+        ]);
 
-    DB::table('exams')->where('id', $id)->update([
-        'standard'      => $req->standard,
-        'exam_name'     => $req->exam_name,
-        'academic_year' => $req->academic_year
-        
-    ]);
+        DB::table('exams')->where('id', $id)->update([
+            'standard' => $req->standard,
+            'exam_name' => $req->exam_name,
+            'academic_year' => $req->academic_year
+        ]);
 
-    return redirect('/list-exams')->with('success', 'Exam updated successfully!');
-}
+        return redirect('/list-exams')->with('success', 'Exam updated successfully!');
+    }
 
     public function createDesignation() {
         return view('admin/designation/create-designation');
@@ -244,9 +341,14 @@ public function updateExams(Request $req, $id)
     }
 
     public function editSubject($id) {
-        $result['group'] = DB::table('groups')->get();
-        $result['subject'] = DB::table('subjects')->where('id', $id)->get();
-        return view('admin/subject/edit-subject', $result);
+        $group = DB::table('groups')
+                ->select(DB::raw('MIN(id) as id'), 'group_short_name')
+                ->whereNotNull('group_short_name')
+                ->groupBy('group_short_name')
+                ->orderBy('group_short_name')
+                ->get();
+        $subject = DB::table('subjects')->where('id', $id)->get();
+        return view('admin/subject/edit-subject', compact('group', 'subject'));
     }
 
     public function deleteSubject($id) {
@@ -271,7 +373,7 @@ public function updateExams(Request $req, $id)
         $data = [
             'subject_name' => $subject_name,
             'standard' => $standard,
-            'group_id' => $group_id
+            'group_id' => $group_id ?? null
         ];
         $result = DB::table('subjects')->where('id', $id)->update($data);
 

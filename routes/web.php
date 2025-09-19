@@ -35,6 +35,8 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::post('/update-exams/{id}', [AdminController::class, 'updateExams']);
     Route::get('/delete-exams/{id}', [AdminController::class, 'deleteExams']);
 
+    Route::get('/marksheet', [AdminController::class, 'marksheet']);
+    Route::post('/create-mark-table', [AdminController::class, 'createMarkTable']);
     Route::get('/create-subject', [AdminController::class, 'subjectForm']);
     Route::post('/save-subject', [AdminController::class, 'createSubject']);
     Route::get('/subject-list', [AdminController::class, 'retriveSubject']);

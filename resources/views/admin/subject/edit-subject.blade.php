@@ -107,15 +107,13 @@
                                                             <span id="basic-icon-default-fullname2" class="input-group-text"
                                                                   ><i class="bx bx-user"></i
                                                                 ></span>
-                                                            <select type="text" class="form-control" name="group_id" />
-                                                            @foreach($group as $dt)
-                                                            @if ($d->group_id == $dt->id)
-                                                            <option value="{{$d->group_id}}" selected >{{$dt->group_short_name}}</option>
-                                                            @else                                                         
-                                                            <option value="{{$dt->id}}">{{$dt->group_short_name}}</option> 
-                                                            @endif
-                                                            @endforeach
-                                                            </select>
+                                                             <select id="groupDropdown" class="form-control" name="group_id">
+                @foreach($group as $dt)
+                    <option value="{{ $dt->id }}" {{ $d->group_id == $dt->id ? 'selected' : '' }}>
+                        {{ $dt->group_short_name }}
+                    </option>
+                @endforeach
+            </select>
                                                         </div>
                                                         @error('group_id')
                                                         <span class="text-danger">{{ $message }}</span>
@@ -180,5 +178,24 @@
 
         <!-- Core JS -->
         @include('admin.includes.formjs')
+        <script>
+    function toggleGroupDropdown() {
+        const standard = document.querySelector("select[name='standard']").value;
+        const groupDropdown = document.getElementById("groupDropdown");
+
+        if (standard == "11" || standard == "12") {
+            groupDropdown.disabled = false;
+        } else {
+            groupDropdown.disabled = true;
+            groupDropdown.value = ""; // reset selection if not 11/12
+        }
+    }
+
+    // Run on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleGroupDropdown();
+        document.querySelector("select[name='standard']").addEventListener("change", toggleGroupDropdown);
+    });
+</script>
     </body>
 </html>
