@@ -124,7 +124,15 @@
                                                         <!-- Academic Year -->
                                                         <div class="col-md-2">
                                                             <label class="form-label">Academic Year</label>
-                                                            <input type="text" id="academic_year" placeholder="____-____" class="form-control" name="academic_years[]" required />
+                                                            <select name="academic_years[]" id="academic_year" class="form-select" required>
+                                                                <option value="">Select Academic Year</option>
+                                                                @foreach($academic_year as $year)
+                                                                <option value="{{ $year->academic_year }}" 
+                                                                        {{ request('academic_year') == $year->academic_year ? 'selected' : '' }}>
+                                                                    {{ $year->academic_year }}
+                                                                </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
 

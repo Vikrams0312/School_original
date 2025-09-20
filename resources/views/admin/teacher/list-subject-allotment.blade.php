@@ -47,7 +47,7 @@
                                     </a>
                                     @endif
 
-                                    <a class="btn btn-sm btn-danger ms-3" href="{{ url('/teacher-list') }}">
+                                    <a class="btn btn-sm btn-danger ms-3" href="{{ url('/create-subject-allotment') }}">
                                         <i class="bx bx-undo me-1"></i> Back
                                     </a>
                                 </div>

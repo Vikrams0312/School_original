@@ -822,7 +822,10 @@ class AdminController extends Controller {
                 ->groupBy('group_short_name')
                 ->orderBy('group_short_name')
                 ->get();
-
+        $academic_year = DB::table('students')
+                ->select('academic_year')
+                ->distinct()
+                ->get();
         // Get distinct shortnames with their IDs
         $classes = DB::table('groups')
                 ->select('standard')
@@ -832,7 +835,7 @@ class AdminController extends Controller {
         $teachers = DB::table('teachers')
                 ->whereIn('designation_id', [2, 1])
                 ->get();
-        return view('admin.teacher.subject-allotment', compact('subjects', 'groups', 'classes', 'teachers'));
+        return view('admin.teacher.subject-allotment', compact('subjects', 'groups', 'classes', 'teachers','academic_year'));
     }
 
     public function saveSubjectAllotments(Request $req) {
