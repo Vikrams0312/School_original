@@ -101,24 +101,25 @@
                                                     </div>
                                                 </div>   
                                                 <div class="row mb-3">
-                                                    <label class="col-sm-2 col-form-label" for="basic-icon-default-fullname">Academic year</label>
+                                                    <label class="col-sm-2 col-form-label" for="basic-icon-default-fullname">Academic Year</label>
                                                     <div class="col-sm-10">
                                                         <div class="input-group input-group-merge">
                                                             <span id="basic-icon-default-fullname2" class="input-group-text"
-                                                                  ><i class="bx bx-calendar-check"></i
+                                                                  ><i class="bx bx-user"></i
                                                                 ></span>
-                                                            <input
-                                                                type="text"
-                                                                class="form-control"                                                                
-                                                                value="{{old('academic_year')}}"
-                                                                name="academic_year"
-                                                                id="academic_year"
-                                                                required
-                                                                placeholder="____-____ "
-                                                                aria-label="Enter academic year "
-                                                                aria-describedby="basic-icon-default-fullname2"                                                               
-                                                                />
-                                                        </div>  
+                                                            <select name="academic_year" id="academic_year" class="form-select" required>
+                                                                <option value="">Select Academic Year</option>
+                                                                @foreach($academic_year as $year)
+                                                                <option value="{{ $year->academic_year }}" 
+                                                                        {{ request('academic_year') == $year->academic_year ? 'selected' : '' }}>
+                                                                    {{ $year->academic_year }}
+                                                                </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        @error('academic_year')
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                        @enderror
                                                     </div>
                                                 </div>
                                                 <div class="row justify-content-end">

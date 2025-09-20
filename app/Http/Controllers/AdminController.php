@@ -52,50 +52,49 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
-public function createMarkTable(Request $request)
-{
-    $standard = $request->input('standard');   // selected class
-    $groupId    = $request->input('group');      // selected group (for 11, 12)
-    $year     = $request->input('academic_year'); // selected academic year
-    $subjects = $request->input('subjects');   // array of subject names
 
-    // 🔹 Sanitize year for table name
-    $yearSafe = str_replace(['-', ' '], '_', $year);
+    public function createMarkTable(Request $request) {
+        $standard = $request->input('standard');   // selected class
+        $groupId = $request->input('group');      // selected group (for 11, 12)
+        $year = $request->input('academic_year'); // selected academic year
+        $subjects = $request->input('subjects');   // array of subject names
+        // 🔹 Sanitize year for table name
+        $yearSafe = str_replace(['-', ' '], '_', $year);
 
-       $groupShort = null;
-    if ($standard > 10 && $groupId) {
-        $groupShort = DB::table('groups')
-            ->where('id', $groupId)
-            ->value('group_short_name'); // fetch only short name
-    }
+        $groupShort = null;
+        if ($standard > 10 && $groupId) {
+            $groupShort = DB::table('groups')
+                    ->where('id', $groupId)
+                    ->value('group_short_name'); // fetch only short name
+        }
 
-    // 🔹 Build table name
-    if ($standard <= 10) {
-        $tableName = "mark_{$standard}_{$yearSafe}";
-    } else {
-        $tableName = "mark_{$standard}_{$groupShort}_{$yearSafe}";
-    }
+        // 🔹 Build table name
+        if ($standard <= 10) {
+            $tableName = "mark_{$standard}_{$yearSafe}";
+        } else {
+            $tableName = "mark_{$standard}_{$groupShort}_{$yearSafe}";
+        }
 
-    // 🔹 Check if table already exists
-    if (\Schema::hasTable($tableName)) {
-        return back()->with('error', "Table $tableName already exists.");
-    }
+        // 🔹 Check if table already exists
+        if (\Schema::hasTable($tableName)) {
+            return back()->with('error', "Table $tableName already exists.");
+        }
 
-    // 🔹 Start CREATE TABLE query
-    $query = "CREATE TABLE `$tableName` (
+        // 🔹 Start CREATE TABLE query
+        $query = "CREATE TABLE `$tableName` (
         id INT PRIMARY KEY AUTO_INCREMENT,
         regno INT,
         standard INT,
         section VARCHAR(2),";
 
-    // 🔹 Add subject columns dynamically
-    foreach ($subjects as $sub) {
-        $colName = strtolower(str_replace(' ', '_', $sub)); // subject is string
-        $query .= " `$colName` INT,";
-    }
+        // 🔹 Add subject columns dynamically
+        foreach ($subjects as $sub) {
+            $colName = strtolower(str_replace(' ', '_', $sub)); // subject is string
+            $query .= " `$colName` INT,";
+        }
 
-    // 🔹 Add fixed columns
-    $query .= "
+        // 🔹 Add fixed columns
+        $query .= "
         total INT,
         student_rank INT,
         exam_id INT,
@@ -103,12 +102,11 @@ public function createMarkTable(Request $request)
         editing_status INT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-    // 🔹 Run query
-    \DB::statement($query);
+        // 🔹 Run query
+        \DB::statement($query);
 
-    return back()->with('success', "Table $tableName created successfully.");
-}
-
+        return back()->with('success', "Table $tableName created successfully.");
+    }
 
     public function marksheet(Request $request) {
         $standards = DB::table('groups')
@@ -148,7 +146,7 @@ public function createMarkTable(Request $request)
         }
         //dd($acdemic_year);
         return view('admin.mark.marksheet', compact(
-                        'standards', 'groups', 'selected_standard', 'selected_group', 'subjects','academic_year'
+                        'standards', 'groups', 'selected_standard', 'selected_group', 'subjects', 'academic_year'
         ));
     }
 
@@ -158,7 +156,11 @@ public function createMarkTable(Request $request)
                 ->groupBy('standard')
                 ->orderBy('standard')
                 ->get();
-        return view('admin/examList/create-exams', compact('standards'));
+        $academic_year = DB::table('students')
+                ->select('academic_year')
+                ->distinct()
+                ->get();
+        return view('admin/examList/create-exams', compact('standards','academic_year'));
     }
 
     public function saveExams(Request $req) {
@@ -792,7 +794,7 @@ public function createMarkTable(Request $request)
             'previous_work_station' => $previous_work_station,
             'qualification' => $qualification,
             'designation_id' => $designation,
-            'join_date' => $join_date,
+            'join_date' => date('Y-m-d', strtotime($req->input('join_date'))),
             'email' => $teacher_email,
         ];
         $result = DB::table('teachers')->where('id', $id)->update($data);

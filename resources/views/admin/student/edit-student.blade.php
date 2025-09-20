@@ -290,12 +290,12 @@
                                                     <div class="col-sm-10 d-flex align-items-start">
                                                         <div class="form-check m-2">
                                                             <input class="form-check-input" type="radio" name="gender" value="male" id="male" 
-                                                                   {{ isset($d->gender) && $d->gender == 'male' ? 'checked' : '' }}>
+                                                                   {{ isset($d->gender) && $d->gender == 'Male' ? 'checked' : '' }}>
                                                             <label class="form-check-label" for="male">Male</label>
                                                         </div>
                                                         <div class="form-check m-2">
                                                             <input class="form-check-input" type="radio" name="gender" value="female" id="female" 
-                                                                   {{ isset($d->gender) && $d->gender == 'female' ? 'checked' : '' }}>
+                                                                   {{ isset($d->gender) && $d->gender == 'Female' ? 'checked' : '' }}>
                                                             <label class="form-check-label" for="female">Female</label>
                                                         </div>
                                                         <div class="form-check m-2">
@@ -369,7 +369,7 @@
                                                                   ><i class="bx bx-mobile-alt"></i
                                                                 ></span>
                                                             <input
-                                                                type="number"
+                                                                type="text"
                                                                 class="form-control"
                                                                 id="mobileno"
                                                                 name="emies_number"
