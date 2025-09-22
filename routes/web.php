@@ -58,6 +58,7 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::get('/edit-subject-allotment/{teacherId}', [AdminController::class, 'subjectAllotmentEdit']);
     Route::post('/update-subject-allotment', [AdminController::class, 'subjectAllotmentUpdate']);
     Route::get('/subjectAllotmentDelete/{id}', [AdminController::class, 'subjectAllotmentDelete']);
+    Route::get('/get-teacher-allotments/{teacherId}', [AdminController::class, 'getTeacherAllotments']);
 
     //designation
     Route::get('/create-designation', [AdminController::class, 'createDesignation']);

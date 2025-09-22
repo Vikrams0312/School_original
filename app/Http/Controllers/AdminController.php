@@ -77,7 +77,7 @@ class AdminController extends Controller {
 
         // 🔹 Check if table already exists
         if (\Schema::hasTable($tableName)) {
-            return back()->with('error', "Table $tableName already exists.");
+            return back()->with('error', "Table already exists.");
         }
 
         // 🔹 Start CREATE TABLE query
@@ -105,7 +105,7 @@ class AdminController extends Controller {
         // 🔹 Run query
         \DB::statement($query);
 
-        return back()->with('success', "Table $tableName created successfully.");
+        return back()->with('success', "Table created successfully.");
     }
 
     public function marksheet(Request $request) {
@@ -880,8 +880,29 @@ class AdminController extends Controller {
             DB::table('subject_allotments')->insert($assignmentData);
         }
 
-        return redirect('/teacher-list')->with('success', 'Subject allotments saved successfully.');
+        return redirect('/create-subject-allotment')->with('success', 'Subject allotments saved successfully.');
     }
+public function getTeacherAllotments($teacherId)
+{
+    $allotments = DB::table('subject_allotments as sa')
+        ->leftJoin('subjects as s', 'sa.subject_id', '=', 's.id')
+        ->leftJoin('groups as g', 'sa.group_name_id', '=', 'g.id')
+        ->select(
+            'sa.id',
+            'sa.standard',
+            'sa.group_name_id',
+            'sa.subject_id',
+            'sa.section',
+            'sa.teacher_type',
+            'sa.academic_year',
+            's.subject_name',
+            'g.group_short_name'
+        )
+        ->where('sa.teacher_id', $teacherId)
+        ->get();
+
+    return response()->json($allotments);
+}
 
     public function subjectAllotmentList($teacher_id) {
         $allotments = DB::table('subject_allotments as sa')

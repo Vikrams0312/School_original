@@ -56,11 +56,11 @@
                                                             <select name="shortname_ids[]" class="form-select group-select" {{ ($allotment->standard == 11 || $allotment->standard == 12) ? '' : 'disabled' }}>
                                                                 <option value="">-- Select Group --</option>
                                                                 @foreach($groups as $shortname)
-                                                                                                                       
+
                                                                 <option value="{{ $shortname->id }}" {{ $shortname->id == $allotment->group_name_id ? 'selected' : '' }}>
                                                                     {{ $shortname->group_short_name }}
                                                                 </option>
-                                      
+
                                                                 @endforeach
                                                             </select>
 
