@@ -9,181 +9,118 @@
     >
     <head>
         <title>Create Teacher</title>
-
         @include('admin.includes.formcss')
-
     </head>
-
     <body>
-        <!-- Layout wrapper -->
         <div class="layout-wrapper layout-content-navbar">
             <div class="layout-container">
-                <!-- Menu -->
 
                 @include('admin.includes.menu')
-                <!-- / Menu -->
-                <!-- Layout container -->
+
                 <div class="layout-page">
-                    <!-- Navbar -->
                     @include('admin.includes.nav')
 
-                    <!-- / Navbar -->
-
-                    <!-- Content wrapper -->
                     <div class="content-wrapper">
-                        <!-- Content -->
-
                         <div class="container-xxl flex-grow-1 container-p-y">
-                            <h4 class="fw-bold py-1 mb-1">Teacher</h4>
+                            <h4 class="fw-bold py-3 mb-4">
+                                <span class="text-muted fw-light">Teacher /</span> Subject Allotment
+                            </h4>
 
-                            <div class="row">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <form action="{{ url('/save-subject-allotments') }}" method="POST">
+                                        @csrf
 
-                                <!-- Basic with Icons -->
-                                <div class="col-xxl">
-                                    <div class="card mb-4">
-                                        <div class="card-header d-flex align-items-center justify-content-between">
-                                            <h5 class="mb-0">Create Teacher Subject Allotment</h5>
-
+                                        <!-- Teacher Dropdown -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="teacher" class="form-label">Select Teacher</label>
+                                                <select class="form-control" name="teacher_id" id="teacher-select" required>
+                                                    <option value="">-- Select Teacher --</option>
+                                                    @foreach($teachers as $teacher)
+                                                    <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <form method="POST" action="{{url('/save-subject-allotments')}}">
-                                                @csrf
 
-                                                <!-- Teacher -->
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Teacher</label>
-                                                    <select name="teacher_id" id="teacher-select" class="form-select" required>
-                                                        <option value="">-- Select Teacher --</option>
-                                                        @foreach($teachers as $teacher)
-                                                        <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
+                                        <!-- Assignment Rows -->
+                                        <div id="assignment-rows"></div>
 
-                                                <div id="assignment-rows" class="mt-3">
-                                                    <div class="row mb-3 assignment-row">
-
-                                                        <!-- Class -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Class</label>
-                                                            <select name="class_ids[]" class="form-select" required>
-                                                                <option value="">-- Select Class --</option>
-                                                                @foreach($classes as $class)
-                                                                <option value="{{ $class->standard }}">{{ $class->standard }}</option>
-                                                                @endforeach
-                                                            </select>
-
-                                                        </div>
-
-                                                        <!-- Group / Short Name -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Group Name</label>
-                                                            <select name="shortname_ids[]" class="form-select">
-                                                                <option value="">-- Select Group --</option>
-                                                                @foreach($groups as $group)
-                                                                <option value="{{ $group->id }}">{{ $group->group_short_name }}</option>
-                                                                @endforeach
-                                                            </select>
-
-
-                                                        </div>
-
-                                                        <!-- Subject -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Subjects</label>
-                                                            <select class="form-select" name="subject_ids[]" required>
-                                                                <option value="">-- Select Subject --</option>
-                                                                @foreach($subjects as $subject)
-                                                                <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        <!-- Section -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Section</label>
-                                                            <select name="sections[]" class="form-select" required>
-                                                                <option value="">-- Select Section --</option>
-                                                                <option value="NoSection">No Section</option>
-                                                                @foreach(range('A', 'G') as $section)
-                                                                <option value="{{ $section }}">{{ $section }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        <!-- Teacher Type -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Teacher Type</label>
-                                                            <select name="teacher_types[]" class="form-select" required>
-                                                                <option value="">-- Select Type --</option>
-                                                                <option value="CT">Class Teacher</option>
-                                                                <option value="ST">Subject Teacher</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <!-- Academic Year -->
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Academic Year</label>
-                                                            <select name="academic_years[]" id="academic_year" class="form-select" required>
-                                                                <option value="">Select Academic Year</option>
-                                                                @foreach($academic_year as $year)
-                                                                <option value="{{ $year->academic_year }}" 
-                                                                        {{ request('academic_year') == $year->academic_year ? 'selected' : '' }}>
-                                                                    {{ $year->academic_year }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                                <!-- Add Row Button -->
-                                                <div class="mb-3">
-                                                    <button type="button" class="btn btn-sm btn-success" id="add-assignment-row">
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                                <div class="row justify-content-start">
-                                                    <div class="col-sm-10">
-                                                        <button type="submit"  class="btn btn-info">Save</button>
-                                                        <!-- Show List button -->
-                                                        <a href="#" id="show-list-btn" class="btn btn-primary">Show list</a>
-                                                    </div>
-                                                </div>
-                                            </form>
-
+                                        <!-- Hidden Row Template -->
+                                        <div id="row-template" class="row mb-3 assignment-row d-none">
+                                            <div class="col-md-2">
+                                                <label class="form-label">Class</label>
+                                                <select class="form-control" name="class_ids[]" >
+                                                    <option value="">-- Select --</option>
+                                                    @foreach($classes as $class)
+                                                    <option value="{{ $class->standard }}">{{ $class->standard }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Group</label>
+                                                <select class="form-control" name="shortname_ids[]">
+                                                    <option value="">-- Select --</option>
+                                                    @foreach($groups as $group)
+                                                    <option value="{{ $group->id }}">{{ $group->group_short_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Subject</label>
+                                                <select class="form-control" name="subject_ids[]">
+                                                    <option value="">-- Select --</option>
+                                                    @foreach($subjects as $subject)
+                                                    <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Section</label>
+                                                <select class="form-control" name="sections[]">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="No Section">No Section</option>
+                                                    <option value="A">A</option>
+                                                    <option value="B">B</option>
+                                                    <option value="C">C</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Teacher Type</label>
+                                                <select class="form-control" name="teacher_types[]">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="CT">Class Teacher</option>
+                                                    <option value="ST">Subject Teacher</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Academic Year</label>
+                                                <select class="form-control" name="academic_years[]">
+                                                    <option value="">-- Select --</option>
+                                                    @foreach($academic_year as $year)
+                                                    <option value="{{ $year->academic_year }}">{{ $year->academic_year }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
+                                        <button type="button" id="add-row" class="btn btn-sm btn-success"><i class="fas fa-plus"></i></button>
+                                        <!-- Buttons -->
+                                        <div class="mt-3">
+                                            <button type="submit" class="btn btn-sm btn-primary">Save Allotments</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
+
                         </div>
-                        <!-- / Content -->
-
-                        <!-- Footer -->
                         @include('admin.includes.footer')
-                        <!-- / Footer -->
-
-                        <div class="content-backdrop fade"></div>
                     </div>
-                    <!-- Content wrapper -->
                 </div>
-                <!-- / Layout page -->
             </div>
-
-            <!-- Overlay -->
-            <div class="layout-overlay layout-menu-toggle"></div>
         </div>
-        <!-- / Layout wrapper -->
 
-        @include('admin.includes.floatmsg')
-
-        <!-- Core JS -->
         @include('admin.includes.formjs')
         <script src="{{url('public/assets/js/develop/subject-allotment.js')}}" type="text/javascript"></script>
-        <script>
-        $(document).ready(function () {
-            handleShowList();
-        });
-        </script>
     </body>
 </html>

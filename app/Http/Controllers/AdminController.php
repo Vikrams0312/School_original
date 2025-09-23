@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AdminController extends Controller {
 
@@ -54,58 +55,73 @@ class AdminController extends Controller {
     }
 
     public function createMarkTable(Request $request) {
-        $standard = $request->input('standard');   // selected class
-        $groupId = $request->input('group');      // selected group (for 11, 12)
-        $year = $request->input('academic_year'); // selected academic year
-        $subjects = $request->input('subjects');   // array of subject names
-        // 🔹 Sanitize year for table name
-        $yearSafe = str_replace(['-', ' '], '_', $year);
+            $standard = $request->input('standard');
+    $groupId = $request->input('group');
+    $year = $request->input('academic_year');
 
-        $groupShort = null;
-        if ($standard > 10 && $groupId) {
-            $groupShort = DB::table('groups')
-                    ->where('id', $groupId)
-                    ->value('group_short_name'); // fetch only short name
-        }
+    // Sanitize year for table name
+    $yearSafe = str_replace(['-', ' '], '_', $year);
 
-        // 🔹 Build table name
-        if ($standard <= 10) {
-            $tableName = "mark_{$standard}_{$yearSafe}";
-        } else {
-            $tableName = "mark_{$standard}_{$groupShort}_{$yearSafe}";
-        }
+    // Get group short name for 11/12
+    $groupShort = null;
+    if ($standard > 10 && $groupId) {
+        $groupShort = DB::table('groups')
+                        ->where('id', $groupId)
+                        ->value('group_short_name');
+    }
 
-        // 🔹 Check if table already exists
-        if (\Schema::hasTable($tableName)) {
-            return back()->with('error', "Table already exists.");
-        }
+    // Build table name
+    $tableName = ($standard <= 10) 
+        ? "mark_{$standard}_{$yearSafe}" 
+        : "mark_{$standard}_{$groupShort}_{$yearSafe}";
 
-        // 🔹 Start CREATE TABLE query
-        $query = "CREATE TABLE `$tableName` (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        regno INT,
-        standard INT,
-        section VARCHAR(2),";
+    // Get subjects for the selected class/group
+    if ($standard <= 10) {
+        $subjects = DB::table('subjects')
+                    ->where('standard', $standard)
+                    ->get();
+    } else {
+        $subjects = DB::table('subjects')
+                    ->where('standard', $standard)
+                    ->where('group_id', $groupId)
+                    ->get();
+    }
 
-        // 🔹 Add subject columns dynamically
-        foreach ($subjects as $sub) {
-            $colName = strtolower(str_replace(' ', '_', $sub)); // subject is string
-            $query .= " `$colName` INT,";
-        }
+    // Create table if not exists
+    if (!Schema::hasTable($tableName)) {
+        Schema::create($tableName, function ($table) use ($subjects, $standard) {
+            $table->id();
+            $table->integer('regno');
+            $table->integer('standard');
+            $table->string('section', 2);
 
-        // 🔹 Add fixed columns
-        $query .= "
-        total INT,
-        student_rank INT,
-        exam_id INT,
-        updated_at DATETIME,
-        editing_status INT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            foreach ($subjects as $sub) {
+                $col = strtolower(str_replace(' ', '_', $sub->subject_name));
+                $table->integer($col)->nullable();
+            }
 
-        // 🔹 Run query
-        \DB::statement($query);
+            $table->integer('total')->nullable();
+            $table->integer('student_rank')->nullable();
+            $table->integer('exam_id')->nullable();
+            $table->dateTime('updated_at')->nullable();
+            $table->integer('editing_status')->default(0);
+        });
 
         return back()->with('success', "Table created successfully.");
+    }
+
+    // Table exists → add missing subject columns
+    $existingColumns = Schema::getColumnListing($tableName);
+    foreach ($subjects as $sub) {
+        $col = strtolower(str_replace(' ', '_', $sub->subject_name));
+        if (!in_array($col, $existingColumns)) {
+            Schema::table($tableName, function ($table) use ($col) {
+                $table->integer($col)->nullable()->after('section');
+            });
+        }
+    }
+
+    return back()->with('success', "Table updated successfully (missing subjects added).");
     }
 
     public function marksheet(Request $request) {
@@ -160,7 +176,7 @@ class AdminController extends Controller {
                 ->select('academic_year')
                 ->distinct()
                 ->get();
-        return view('admin/examList/create-exams', compact('standards','academic_year'));
+        return view('admin/examList/create-exams', compact('standards', 'academic_year'));
     }
 
     public function saveExams(Request $req) {
@@ -835,74 +851,109 @@ class AdminController extends Controller {
         $teachers = DB::table('teachers')
                 ->whereIn('designation_id', [2, 1])
                 ->get();
-        return view('admin.teacher.subject-allotment', compact('subjects', 'groups', 'classes', 'teachers','academic_year'));
+
+        return view('admin.teacher.subject-allotment', compact('subjects', 'groups', 'classes', 'teachers', 'academic_year'));
     }
 
+//   public function saveSubjectAllotments(Request $req) {
+//    
+//    $teacher_id = $req->teacher_id;
+//    $class_ids = $req->class_ids;
+//    $shortname_ids = $req->shortname_ids;
+//    $subject_ids = $req->subject_ids;
+//    $sections = $req->sections;
+//    $teacher_types = $req->teacher_types;
+//    $academic_years = $req->academic_years;
+//    $allotment_ids = $req->allotment_ids ?? [];
+//
+//    for ($i = 0; $i < count($class_ids); $i++) {
+//        $allotment_id = $allotment_ids[$i] ?? null;
+//
+//        // Skip existing allotments
+//        if ($allotment_id) continue;
+//
+//        $class_id = (int) $class_ids[$i];
+//        $shortname_id = $class_id > 10 ? ($shortname_ids[$i] ?? null) : null;
+//
+//        DB::table('subject_allotments')->insert([
+//            'teacher_id' => $teacher_id,
+//            'standard' => $class_id,
+//            'group_name_id' => $shortname_id,
+//            'subject_id' => $subject_ids[$i],
+//            'section' => $sections[$i],
+//            'teacher_type' => $teacher_types[$i],
+//            'academic_year' => $academic_years[$i],
+//        ]);
+//    }
+//
+//    return redirect('/create-subject-allotment')->with('success', 'New subject allotments saved successfully.');
+//}
+
     public function saveSubjectAllotments(Request $req) {
-        $validatedData = $req->validate([
-            'class_ids' => 'required|array',
-            'class_ids.*' => 'required',
-            'subject_ids' => 'required|array',
-            'subject_ids.*' => 'required',
-            'sections' => 'required|array',
-            'sections.*' => 'required',
-            'teacher_types' => 'required|array',
-            'teacher_types.*' => 'required',
-            'academic_years' => 'required|array',
-            'academic_years.*' => 'required',
-        ]);
         $teacher_id = $req->teacher_id;
         $class_ids = $req->class_ids;
-        $shortname_ids = $req->shortname_ids;
+        $shortname_ids = $req->shortname_ids ?? [];
         $subject_ids = $req->subject_ids;
         $sections = $req->sections;
         $teacher_types = $req->teacher_types;
         $academic_years = $req->academic_years;
+        $allotment_ids = $req->allotment_ids ?? [];
 
         for ($i = 0; $i < count($class_ids); $i++) {
             $class_id = (int) $class_ids[$i];
-            $shortname_id = $class_id > 10 ? ($shortname_ids[$i] ?? null) : null;
             $subject_id = $subject_ids[$i] ?? null;
-            $section = $sections[$i];
-            $teacher_type = $teacher_types[$i];
-            $academic_year = $academic_years[$i];
 
-            $assignmentData = [
-                'teacher_id' => $teacher_id,
+            // Skip if no subject selected
+            if (!$subject_id)
+                continue;
+
+            // Only classes 11 & 12 have group
+            $shortname_id = ($class_id == 11 || $class_id == 12) ? ($shortname_ids[$i] ?? null) : null;
+
+            $data = [
                 'standard' => $class_id,
                 'group_name_id' => $shortname_id,
                 'subject_id' => $subject_id,
-                'section' => $section,
-                'teacher_type' => $teacher_type,
-                'academic_year' => $academic_year,
+                'section' => $sections[$i],
+                'teacher_type' => $teacher_types[$i],
+                'academic_year' => $academic_years[$i],
             ];
 
-            DB::table('subject_allotments')->insert($assignmentData);
+            if (!empty($allotment_ids[$i])) {
+                // Existing allotment → update
+                DB::table('subject_allotments')
+                        ->where('id', $allotment_ids[$i])
+                        ->update($data);
+            } else {
+                // New allotment → insert
+                $data['teacher_id'] = $teacher_id;
+                DB::table('subject_allotments')->insert($data);
+            }
         }
 
-        return redirect('/create-subject-allotment')->with('success', 'Subject allotments saved successfully.');
+        return redirect()->back()->with('success', 'Subject allotments saved successfully.');
     }
-public function getTeacherAllotments($teacherId)
-{
-    $allotments = DB::table('subject_allotments as sa')
-        ->leftJoin('subjects as s', 'sa.subject_id', '=', 's.id')
-        ->leftJoin('groups as g', 'sa.group_name_id', '=', 'g.id')
-        ->select(
-            'sa.id',
-            'sa.standard',
-            'sa.group_name_id',
-            'sa.subject_id',
-            'sa.section',
-            'sa.teacher_type',
-            'sa.academic_year',
-            's.subject_name',
-            'g.group_short_name'
-        )
-        ->where('sa.teacher_id', $teacherId)
-        ->get();
 
-    return response()->json($allotments);
-}
+    public function getTeacherAllotments($teacherId) {
+        $allotments = DB::table('subject_allotments as sa')
+                ->leftJoin('subjects as s', 'sa.subject_id', '=', 's.id')
+                ->leftJoin('groups as g', 'sa.group_name_id', '=', 'g.id')
+                ->select(
+                        'sa.id',
+                        'sa.standard',
+                        'sa.group_name_id',
+                        'sa.subject_id',
+                        'sa.section',
+                        'sa.teacher_type',
+                        'sa.academic_year',
+                        's.subject_name',
+                        'g.group_short_name'
+                )
+                ->where('sa.teacher_id', $teacherId)
+                ->get();
+
+        return response()->json($allotments);
+    }
 
     public function subjectAllotmentList($teacher_id) {
         $allotments = DB::table('subject_allotments as sa')

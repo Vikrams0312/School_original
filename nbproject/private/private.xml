@@ -3,12 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/xampp/htdocs/erm/public/assets/js/develop/subject-allotment.js</file>
-            <file>file:/D:/xampp/htdocs/erm/resources/views/admin/teacher/subject-allotment.blade.php</file>
+            <file>file:/D:/xampp/htdocs/erm/resources/views/admin/mark/marksheet.blade.php</file>
             <file>file:/D:/xampp/htdocs/erm/routes/web.php</file>
-            <file>file:/D:/xampp/htdocs/erm/resources/views/admin/teacher/edit-subject-allotment.blade.php</file>
             <file>file:/D:/xampp/htdocs/erm/app/Http/Controllers/AdminController.php</file>
-            <file>file:/D:/xampp/htdocs/erm/public/assets/js/develop/subjectallotmentEditandList.js</file>
+            <file>file:/D:/xampp/htdocs/erm/public/assets/js/develop/school.js</file>
         </group>
     </open-files>
 </project-private>
