@@ -54,8 +54,8 @@ class AdminController extends Controller {
         return view('admin/login/dashboard');
     }
 
-    public function createMarkTable(Request $request) {
-            $standard = $request->input('standard');
+  public function createMarkTable(Request $request) {
+    $standard = $request->input('standard');
     $groupId = $request->input('group');
     $year = $request->input('academic_year');
 
@@ -87,16 +87,36 @@ class AdminController extends Controller {
                     ->get();
     }
 
+    // Helper function to make subject names safe for columns
+    $sanitize = function ($name) {
+        // Lowercase
+        $col = strtolower($name);
+        // Replace spaces, dashes, slashes, dots, ampersands with underscore
+        $col = preg_replace('/[^\w]+/', '_', $col);
+        // Trim leading/trailing underscores
+        $col = trim($col, '_');
+        // Ensure it doesn't start with a number
+        if (preg_match('/^\d/', $col)) {
+            $col = 'sub_' . $col;
+        }
+        return $col;
+    };
+
+    // Convert subject names into safe column names
+    $subjectColumns = $subjects->map(function ($sub) use ($sanitize) {
+        return $sanitize($sub->subject_name);
+    })->toArray();
+
     // Create table if not exists
     if (!Schema::hasTable($tableName)) {
-        Schema::create($tableName, function ($table) use ($subjects, $standard) {
+        Schema::create($tableName, function ($table) use ($subjects, $sanitize) {
             $table->id();
             $table->integer('regno');
             $table->integer('standard');
             $table->string('section', 2);
 
             foreach ($subjects as $sub) {
-                $col = strtolower(str_replace(' ', '_', $sub->subject_name));
+                $col = $sanitize($sub->subject_name);
                 $table->integer($col)->nullable();
             }
 
@@ -110,19 +130,41 @@ class AdminController extends Controller {
         return back()->with('success', "Table created successfully.");
     }
 
-    // Table exists → add missing subject columns
+    // ✅ Table already exists → check for differences
     $existingColumns = Schema::getColumnListing($tableName);
-    foreach ($subjects as $sub) {
-        $col = strtolower(str_replace(' ', '_', $sub->subject_name));
+    $protectedCols = ['id','regno','standard','section','total','student_rank','exam_id','updated_at','editing_status'];
+
+    $changed = false;
+
+    // 1. Add missing subject columns
+    foreach ($subjectColumns as $col) {
         if (!in_array($col, $existingColumns)) {
             Schema::table($tableName, function ($table) use ($col) {
                 $table->integer($col)->nullable()->after('section');
             });
+            $changed = true;
         }
     }
 
-    return back()->with('success', "Table updated successfully (missing subjects added).");
+    // 2. Drop all extra subject columns at once
+    $extraCols = array_diff(
+        array_diff($existingColumns, $protectedCols), // exclude protected
+        $subjectColumns                              // exclude valid subjects
+    );
+
+    if (!empty($extraCols)) {
+        Schema::table($tableName, function ($table) use ($extraCols) {
+            $table->dropColumn($extraCols);
+        });
+        $changed = true;
     }
+
+    if ($changed) {
+        return back()->with('success', "Table updated successfully.");
+    }
+
+    return back()->with('error', "Table already exists.");
+}
 
     public function marksheet(Request $request) {
         $standards = DB::table('groups')
