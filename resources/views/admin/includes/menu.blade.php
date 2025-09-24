@@ -96,10 +96,10 @@ $url_segment = Request::segment(1);
                 <div data-i18n="createexams">Create Exams</div>
             </a>
         </li>
-         <li class="menu-item {{ $url_segment == 'marksheet' ? 'active' : '' }}">
-            <a href="{{ url('/marksheet') }}" class="menu-link">
+         <li class="menu-item {{ $url_segment == 'marktable' ? 'active' : '' }}">
+            <a href="{{ url('/marktable') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-id-card"></i>
-                <div data-i18n="Marksheet">Marksheet</div>
+                <div data-i18n="Marksheet">Mark Table</div>
             </a>
         </li>
         <!-- Account Settings -->

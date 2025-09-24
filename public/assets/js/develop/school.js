@@ -1,3 +1,68 @@
+function resetFormOnSuccess(filterFormId, groupId) {
+    const filterForm = document.getElementById(filterFormId);
+    const group = document.getElementById(groupId);
+
+    if (filterForm) {
+        filterForm.reset();
+    }
+    if (group) {
+        group.disabled = true;
+    }
+    const subjectsBlock = document.querySelector(".mt-3");
+    if (subjectsBlock) {
+        subjectsBlock.remove();
+    }
+}
+
+function clearSubjectsOnChange(elements) {
+    function clearSubjects() {
+        const subjectsBlock = document.querySelector(".mt-3");
+        if (subjectsBlock) {
+            subjectsBlock.remove();
+        }
+    }
+
+    elements.forEach(el => {
+        if (el) {
+            el.addEventListener("change", clearSubjects);
+        }
+    });
+}
+
+function toggleGroupOnClassChange(standardId, groupId) {
+    const standard = document.getElementById(standardId);
+    const group = document.getElementById(groupId);
+
+    if (!standard || !group) return;
+
+    standard.addEventListener("change", function () {
+        const value = parseInt(this.value);
+        if (!isNaN(value) && value <= 10) {
+            group.value = "";
+            group.disabled = true;
+        } else {
+            group.disabled = false;
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const filterForm = document.getElementById("filterForm");
+    const standard = document.getElementById("standard");
+    const group = document.getElementById("group");
+    const year = document.getElementById("academic_year");
+
+    // ✅ Case 1: Reset form after success
+    if (document.body.dataset.success === "true") {
+        resetFormOnSuccess("filterForm", "group");
+    }
+
+    // ✅ Case 2: Clear subjects when dropdown changes
+    clearSubjectsOnChange([standard, group, year]);
+
+    // ✅ Case 3: Toggle group dynamically
+    toggleGroupOnClassChange("standard", "group");
+});
 
 
 function getPaymentHistory(element){

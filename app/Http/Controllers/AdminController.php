@@ -166,7 +166,7 @@ class AdminController extends Controller {
     return back()->with('error', "Table already exists.");
 }
 
-    public function marksheet(Request $request) {
+    public function marktablepage(Request $request) {
         $standards = DB::table('groups')
                 ->select(DB::raw('MIN(id) as id'), 'standard')
                 ->groupBy('standard')
@@ -203,7 +203,7 @@ class AdminController extends Controller {
             }
         }
         //dd($acdemic_year);
-        return view('admin.mark.marksheet', compact(
+        return view('admin.mark.marktable', compact(
                         'standards', 'groups', 'selected_standard', 'selected_group', 'subjects', 'academic_year'
         ));
     }

@@ -13,7 +13,8 @@
         @include('admin.includes.formcss')
     </head>
 
-    <body>
+    <body data-success="{{ session('success') ? 'true' : 'false' }}">
+
         <!-- Layout wrapper -->
         <div class="layout-wrapper layout-content-navbar">
             <div class="layout-container">
@@ -39,43 +40,29 @@
                                 <div class="col-xxl">
                                     <div class="card mb-4">
                                         <div class="card-header d-flex align-items-center justify-content-between">
-                                            <h5 class="mb-0">Marksheet</h5>
+                                            <h5 class="mb-0"> Create Marktable</h5>
                                         </div>
                                         <div class="card-body">
                                             @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+                                            <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                                                {{ session('success') }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>           
+                                            @endif
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Reset all dropdowns to default
-            const filterForm = document.querySelector('form[action="{{ url('/marksheet') }}"]');
-            if (filterForm) {
-                filterForm.reset();
-            }
-            // Disable group again (since class will be blank after reset)
-            document.getElementById('group').disabled = true;
-        });
-    </script>
-@endif
-
-                                            <form  id="filterForm" method="GET" action="{{ url('/marksheet') }}">
-                                               
-
-                                                @if(session('error'))
-                                                <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
-                                                    {{ session('error') }}
-                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                </div>
-                                                @endif
+                                            @if(session('error'))
+                                            <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                                                {{ session('error') }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                            @endif
+                                            <form  id="filterForm" method="GET" action="{{ url('/marktable') }}">
                                                 <div class="row mb-3">
                                                     <!-- Standard Dropdown -->
                                                     <div class="col-md-3">
                                                         <label for="standard" class="form-label">Class</label>
-                                                        <select name="standard" id="standard" class="form-select" onchange="toggleGroup()">
-                                                            <option>Select Class</option>
+                                                        <select name="standard" id="standard" class="form-select" onchange="toggleGroup()" required>
+                                                            <option value="">Select Class</option>
                                                             @foreach($standards as $std)
                                                             <option value="{{ $std->standard }}" 
                                                                     {{ request('standard') == $std->standard ? 'selected' : '' }}>
@@ -170,55 +157,7 @@
 
         <!-- Core JS -->
         @include('admin.includes.formjs')
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const filterForm = document.getElementById("filterForm");
-    const group = document.getElementById("group");
-
-    // Case 1: After success (table created), reset immediately
-    @if(session('success'))
-        if (filterForm) {
-            filterForm.reset();
-        }
-        if (group) {
-            group.disabled = true;
-        }
-        const subjectsBlock = document.querySelector(".mt-3");
-        if (subjectsBlock) {
-            subjectsBlock.remove();
-        }
-    @endif
-
-    // Case 2: Clear subjects whenever dropdown changes
-    const standard = document.getElementById("standard");
-    const year = document.getElementById("academic_year");
-
-    function clearSubjects() {
-        const subjectsBlock = document.querySelector(".mt-3");
-        if (subjectsBlock) {
-            subjectsBlock.remove();
-        }
-    }
-
-    [standard, group, year].forEach(el => {
-        if (el) el.addEventListener("change", clearSubjects);
-    });
-
-    // Case 3: Toggle group dynamically when class changes
-    if (standard) {
-        standard.addEventListener("change", function () {
-            const value = parseInt(this.value);
-            if (!isNaN(value) && value <= 10) {
-                group.value = "";
-                group.disabled = true;
-            } else {
-                group.disabled = false;
-            }
-        });
-    }
-});
-</script>
-
+      
 
 
 
