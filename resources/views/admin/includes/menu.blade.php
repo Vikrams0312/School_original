@@ -40,7 +40,7 @@ $url_segment = Request::segment(1);
                         <div data-i18n="Without menu">Student List</div>
                     </a>
                 </li>
-               
+
             </ul>
         </li>
         <!-- Teacher List -->
@@ -90,16 +90,22 @@ $url_segment = Request::segment(1);
                 <div data-i18n="Designation">Designation Lists</div>
             </a>
         </li>
-                <li class="menu-item {{ $url_segment == 'create-exams' ? 'active' : '' }}">
+        <li class="menu-item {{ $url_segment == 'create-exams' ? 'active' : '' }}">
             <a href="{{ url('/create-exams') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-id-card"></i>
                 <div data-i18n="createexams">Create Exams</div>
             </a>
         </li>
-         <li class="menu-item {{ $url_segment == 'marktable' ? 'active' : '' }}">
+        <li class="menu-item {{ $url_segment == 'marktable' ? 'active' : '' }}">
             <a href="{{ url('/marktable') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-id-card"></i>
-                <div data-i18n="Marksheet">Mark Table</div>
+                <div data-i18n="Marksheet">Create Mark Table</div>
+            </a>
+        </li>
+        <li class="menu-item {{ $url_segment == 'mark-entry' ? 'active' : '' }}">
+            <a href="{{ url('/mark-entry') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-id-card"></i>
+                <div data-i18n="Markentry"> Mark Entry</div>
             </a>
         </li>
         <!-- Account Settings -->
@@ -151,7 +157,6 @@ $url_segment = Request::segment(1);
                 </li>
             </ul>
         </li>
-
         <!-- Misc -->
         <li class="menu-item {{ in_array($url_segment, ['pages-misc-error', 'pages-misc-under-maintenance']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">

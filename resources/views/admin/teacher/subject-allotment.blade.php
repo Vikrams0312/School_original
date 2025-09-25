@@ -49,7 +49,7 @@
 
                                         <!-- Hidden Row Template -->
                                         <div id="row-template" class="row mb-3 assignment-row d-none">
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Class</label>
                                                 <select class="form-control" name="class_ids[]" >
                                                     <option value="">-- Select --</option>
@@ -58,7 +58,7 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Group</label>
                                                 <select class="form-control" name="shortname_ids[]">
                                                     <option value="">-- Select --</option>
@@ -67,7 +67,7 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Subject</label>
                                                 <select class="form-control" name="subject_ids[]">
                                                     <option value="">-- Select --</option>
@@ -76,17 +76,17 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Section</label>
                                                 <select class="form-control" name="sections[]">
-                                                    <option value="">-- Select --</option>
+
                                                     <option value="No Section">No Section</option>
-                                                    <option value="A">A</option>
-                                                    <option value="B">B</option>
-                                                    <option value="C">C</option>
+                                                    @foreach(range('A', 'G') as $section)
+                                                    <option  value="{{ $section }}">{{ $section }}</option>
+                                                    @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Teacher Type</label>
                                                 <select class="form-control" name="teacher_types[]">
                                                     <option value="">-- Select --</option>
@@ -94,7 +94,7 @@
                                                     <option value="ST">Subject Teacher</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Academic Year</label>
                                                 <select class="form-control" name="academic_years[]">
                                                     <option value="">-- Select --</option>
@@ -104,9 +104,10 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <button type="button" id="add-row" class="btn btn-sm btn-success"><i class="fas fa-plus"></i></button>
+
                                         <!-- Buttons -->
                                         <div class="mt-3">
+                                            <button type="button" id="add-row" class="btn btn-sm btn-success"><i class="fas fa-plus"></i></button>
                                             <button type="submit" class="btn btn-sm btn-primary">Save Allotments</button>
                                         </div>
                                     </form>

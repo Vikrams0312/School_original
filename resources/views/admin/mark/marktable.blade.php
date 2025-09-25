@@ -31,9 +31,6 @@
                         <!-- Content -->
                         <div class="container-xxl flex-grow-1 container-p-y">
                             <h4 class="fw-bold py-1 mb-1">Mark Table</h4>
-
-                            <hr class="my-2" />
-
                             <!-- Basic Layout & Basic with Icons -->
                             <div class="row">
                                 <!-- Basic with Icons -->
@@ -49,7 +46,6 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                             </div>           
                                             @endif
-
                                             @if(session('error'))
                                             <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
                                                 {{ session('error') }}
@@ -71,7 +67,6 @@
                                                             @endforeach
                                                         </select>
                                                     </div>
-
                                                     <!-- Group Dropdown -->
                                                     <div class="col-md-3">
                                                         <label for="group" class="form-label">Group</label>
@@ -86,7 +81,6 @@
                                                             @endforeach
                                                         </select>
                                                     </div>
-
                                                     <!-- Academic Year Dropdown -->
                                                     <div class="col-md-3">
                                                         <label for="academic_year" class="form-label">Academic Year</label>
@@ -100,16 +94,13 @@
                                                             @endforeach
                                                         </select>
                                                     </div>
-
                                                     <!-- Submit button -->
                                                     <div class="col-md-2 mt-4">
                                                         <button type="submit" class="btn btn-primary">Submit</button>
                                                     </div>
                                                 </div>
                                             </form>
-
-
-                                            {{-- Only show subjects if NO success message --}}
+                                            <!-- Only show subjects if NO success message -->
                                             @if(isset($subjects) && count($subjects) > 0 && !session('success'))
                                             <div class="mt-3">
                                                 <h5>Subjects</h5>

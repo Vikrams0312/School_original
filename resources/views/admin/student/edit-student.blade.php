@@ -87,7 +87,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="row mb-3">
-                                                    <label class="col-sm-2 col-form-label" for="basic-icon-default-fullname">Register Number</label>
+                                                    <label class="col-sm-2 col-form-label" for="basic-icon-default-fullname">Enroll Number</label>
                                                     <div class="col-sm-10">
                                                         <div class="input-group input-group-merge">
                                                             <span id="basic-icon-default-fullname2" class="input-group-text"
@@ -97,15 +97,15 @@
                                                                 type="number"
                                                                 class="form-control"
                                                                 id="basic-icon-default-fullname"
-                                                                name="register_number"
-                                                                value="{{$d->register_number}}"
-                                                                placeholder="Enter register number"
-                                                                aria-label="Enter register number"
+                                                                name="enrollno"
+                                                                value="{{$d->enrollno}}"
+                                                                placeholder="Enter Enroll number"
+                                                                aria-label="Enter Enroll number"
                                                                 aria-describedby="basic-icon-default-fullname2"
                                                                 autofocus="true"
                                                                 />
                                                         </div>
-                                                        @error('register_number')
+                                                        @error('enrollno')
                                                         <span class="text-danger">{{ $message }}</span>
                                                         @enderror
                                                     </div>

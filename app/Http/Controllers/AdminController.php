@@ -54,117 +54,148 @@ class AdminController extends Controller {
         return view('admin/login/dashboard');
     }
 
-  public function createMarkTable(Request $request) {
-    $standard = $request->input('standard');
-    $groupId = $request->input('group');
-    $year = $request->input('academic_year');
+  public function markEntry() {
+    $teacher_id = session('user_id'); // or auth()->id()
 
-    // Sanitize year for table name
-    $yearSafe = str_replace(['-', ' '], '_', $year);
+    // Get teacher's subject allotments
+    $allotments = DB::table('subject_allotments')
+            ->where('teacher_id', $teacher_id)
+            ->select('standard', 'group_name_id', 'section', 'subject_id')
+            ->distinct()
+            ->get();
 
-    // Get group short name for 11/12
-    $groupShort = null;
-    if ($standard > 10 && $groupId) {
-        $groupShort = DB::table('groups')
-                        ->where('id', $groupId)
-                        ->value('group_short_name');
-    }
+    // Extract dropdown values without default selection
+    $standards = $allotments->pluck('standard')->unique()->sortDesc()->values();
+    $sections = $allotments->pluck('section')->unique()->values();
+    $groups = $allotments->pluck('group_name_id')->unique()->filter()->values();
+    $subjects = $allotments->pluck('subject_id')->unique();
 
-    // Build table name
-    $tableName = ($standard <= 10) 
-        ? "mark_{$standard}_{$yearSafe}" 
-        : "mark_{$standard}_{$groupShort}_{$yearSafe}";
+    // Fetch group & subject list for dropdowns
+    $group_list = DB::table('groups')->whereIn('id', $groups)->get();
+    $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
 
-    // Get subjects for the selected class/group
-    if ($standard <= 10) {
-        $subjects = DB::table('subjects')
+    $exams = DB::table('exams')->get();
+
+    return view('admin/mark/mark-entry', compact(
+        'standards', 
+        'sections', 
+        'groups', 
+        'subjects', 
+        'group_list', 
+        'subject_list', 
+        'exams'
+    ));
+}
+
+    public function createMarkTable(Request $request) {
+        $standard = $request->input('standard');
+        $groupId = $request->input('group');
+        $year = $request->input('academic_year');
+
+        // Sanitize year for table name
+        $yearSafe = str_replace(['-', ' '], '_', $year);
+
+        // Get group short name for 11/12
+        $groupShort = null;
+        if ($standard > 10 && $groupId) {
+            $groupShort = DB::table('groups')
+                    ->where('id', $groupId)
+                    ->value('group_short_name');
+        }
+
+        // Build table name
+        $tableName = ($standard <= 10) ? "mark_{$standard}_{$yearSafe}" : "mark_{$standard}_{$groupShort}_{$yearSafe}";
+
+        // Get subjects for the selected class/group
+        if ($standard <= 10) {
+            $subjects = DB::table('subjects')
                     ->where('standard', $standard)
                     ->get();
-    } else {
-        $subjects = DB::table('subjects')
+        } else {
+            $subjects = DB::table('subjects')
                     ->where('standard', $standard)
                     ->where('group_id', $groupId)
                     ->get();
-    }
-
-    // Helper function to make subject names safe for columns
-    $sanitize = function ($name) {
-        // Lowercase
-        $col = strtolower($name);
-        // Replace spaces, dashes, slashes, dots, ampersands with underscore
-        $col = preg_replace('/[^\w]+/', '_', $col);
-        // Trim leading/trailing underscores
-        $col = trim($col, '_');
-        // Ensure it doesn't start with a number
-        if (preg_match('/^\d/', $col)) {
-            $col = 'sub_' . $col;
         }
-        return $col;
-    };
 
-    // Convert subject names into safe column names
-    $subjectColumns = $subjects->map(function ($sub) use ($sanitize) {
-        return $sanitize($sub->subject_name);
-    })->toArray();
-
-    // Create table if not exists
-    if (!Schema::hasTable($tableName)) {
-        Schema::create($tableName, function ($table) use ($subjects, $sanitize) {
-            $table->id();
-            $table->integer('regno');
-            $table->integer('standard');
-            $table->string('section', 2);
-
-            foreach ($subjects as $sub) {
-                $col = $sanitize($sub->subject_name);
-                $table->integer($col)->nullable();
+        // Helper function to make subject names safe for columns
+        $sanitize = function ($name) {
+            // Lowercase
+            $col = strtolower($name);
+            // Replace spaces, dashes, slashes, dots, ampersands with underscore
+            $col = preg_replace('/[^\w]+/', '_', $col);
+            // Trim leading/trailing underscores
+            $col = trim($col, '_');
+            // Ensure it doesn't start with a number
+            if (preg_match('/^\d/', $col)) {
+                $col = 'sub_' . $col;
             }
+            return $col;
+        };
 
-            $table->integer('total')->nullable();
-            $table->integer('student_rank')->nullable();
-            $table->integer('exam_id')->nullable();
-            $table->dateTime('updated_at')->nullable();
-            $table->integer('editing_status')->default(0);
-        });
+        // Convert subject names into safe column names
+        $subjectColumns = $subjects->map(function ($sub) use ($sanitize) {
+                    return $sanitize($sub->subject_name);
+                })->toArray();
 
-        return back()->with('success', "Table created successfully.");
-    }
+        // Create table if not exists
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function ($table) use ($subjects, $sanitize) {
+                $table->id();
+                $table->integer('enrollno');
+                $table->integer('standard');
+                $table->string('section', 2);
 
-    // ✅ Table already exists → check for differences
-    $existingColumns = Schema::getColumnListing($tableName);
-    $protectedCols = ['id','regno','standard','section','total','student_rank','exam_id','updated_at','editing_status'];
+                foreach ($subjects as $sub) {
+                    $col = $sanitize($sub->subject_name);
+                    $table->integer($col)->nullable();
+                }
 
-    $changed = false;
+                $table->integer('total')->nullable();
+                $table->integer('student_rank')->nullable();
+                $table->integer('exam_id')->nullable();
+                $table->dateTime('updated_at')->nullable();
+                $table->integer('editing_status')->default(0);
+            });
 
-    // 1. Add missing subject columns
-    foreach ($subjectColumns as $col) {
-        if (!in_array($col, $existingColumns)) {
-            Schema::table($tableName, function ($table) use ($col) {
-                $table->integer($col)->nullable()->after('section');
+            return back()->with('success', "Table created successfully.");
+        }
+
+        // ✅ Table already exists → check for differences
+        $existingColumns = Schema::getColumnListing($tableName);
+        $protectedCols = ['id', 'enrollno', 'standard', 'section', 'total', 'student_rank', 'exam_id', 'updated_at', 'editing_status'];
+
+        $changed = false;
+
+        // 1. Add missing subject columns
+        foreach ($subjectColumns as $col) {
+            if (!in_array($col, $existingColumns)) {
+                Schema::table($tableName, function ($table) use ($col) {
+                    $table->integer($col)->nullable()->after('section');
+                });
+                $changed = true;
+            }
+        }
+
+        // 2. Drop all extra subject columns at once
+        $extraCols = array_diff(
+                array_diff($existingColumns, $protectedCols), // exclude protected
+                $subjectColumns                              // exclude valid subjects
+        );
+
+        if (!empty($extraCols)) {
+            Schema::table($tableName, function ($table) use ($extraCols) {
+                $table->dropColumn($extraCols);
             });
             $changed = true;
         }
+
+        if ($changed) {
+            return back()->with('success', "Table updated successfully.");
+        }
+
+        return back()->with('error', "Table already exists.");
     }
-
-    // 2. Drop all extra subject columns at once
-    $extraCols = array_diff(
-        array_diff($existingColumns, $protectedCols), // exclude protected
-        $subjectColumns                              // exclude valid subjects
-    );
-
-    if (!empty($extraCols)) {
-        Schema::table($tableName, function ($table) use ($extraCols) {
-            $table->dropColumn($extraCols);
-        });
-        $changed = true;
-    }
-
-    if ($changed) {
-        return back()->with('success', "Table updated successfully.");
-    }
-
-    return back()->with('error', "Table already exists.");
-}
 
     public function marktablepage(Request $request) {
         $standards = DB::table('groups')
@@ -558,15 +589,15 @@ class AdminController extends Controller {
 
     public function createStudent(Request $req) {
         $validatedData = $req->validate([
-            'register_number' => 'required|numeric',
+            'enrollno' => 'required|numeric',
             'student_name' => 'required|string|min:3|max:50',
             'mobile' => 'required|numeric|digits:10',
             'dob' => 'required|date|before:today',
             'academic_year' => 'required',
             'gender' => 'required|string'
                 ], [
-            'register_number.required' => 'Register number is required.',
-            'register_number.numeric' => 'Register number must be numeric.',
+            'enrollno.required' => 'Register number is required.',
+            'enrollno.numeric' => 'Register number must be numeric.',
             'student_name.required' => 'Student name is required.',
             'student_name.min' => 'Student name must be at least 3 characters.',
             'student_name.max' => 'Student name cannot exceed 50 characters.',
@@ -580,7 +611,7 @@ class AdminController extends Controller {
         ]);
 
         $data = [
-            'register_number' => $req->input('register_number'),
+            'enrollno' => $req->input('enrollno'),
             'name' => strtoupper($req->input('student_name')),
             'father_name' => strtoupper($req->input('father_name')),
             'mother_name' => strtoupper($req->input('mother_name')),
@@ -599,7 +630,7 @@ class AdminController extends Controller {
             'academic_year' => $req->input('academic_year')
         ];
 
-        $Studentexist = DB::table('students')->where('register_number', $data['register_number'])->first();
+        $Studentexist = DB::table('students')->where('enrollno', $data['enrollno'])->first();
         if ($Studentexist) {
             return redirect()->back()->withErrors(['error' => 'This student already exists with the same register number.'])->withInput();
         } else {
@@ -678,16 +709,16 @@ class AdminController extends Controller {
 
     public function updateStudent(Request $req) {
         $validatedData = $req->validate([
-            'register_number' => 'required|numeric',
+            'enrollno' => 'required|numeric',
             'student_name' => 'required|string|max:255',
             'mobile' => 'required|numeric|digits:10',
             'dob' => 'required|date|before:today',
             'joined_at' => 'date|before:today',
             'student_email' => 'required|email', // Added email validation
                 ], [
-            'register_number.required' => 'Register number is required.',
-            'register_number.numeric' => 'Register number must be numeric.',
-            'register_number.unique' => 'This register number is already in use.',
+            'enrollno.required' => 'Enrollno number is required.',
+            'enrollno.numeric' => 'Enrollno number must be numeric.',
+            'enrollno.unique' => 'This enrollno number is already in use.',
             'student_name.required' => 'Student name is required.',
             'mobile.required' => 'Mobile number is required.',
             'mobile.numeric' => 'Mobile number must be numeric.',
@@ -706,7 +737,7 @@ class AdminController extends Controller {
         \Log::info('Updating student with ID: ' . $id, $req->all());
 
         $existingStudent = DB::table('students')
-                ->where('register_number', $req->input('register_number'))
+                ->where('enrollno', $req->input('enrollno'))
                 ->where('id', '!=', $id)
                 ->first();
 
@@ -715,7 +746,7 @@ class AdminController extends Controller {
         }
 
         $data = [
-            'register_number' => $req->input('register_number'),
+            'enrollno' => $req->input('enrollno'),
             'name' => strtoupper($req->input('student_name')),
             'father_name' => strtoupper($req->input('father_name')),
             'mother_name' => strtoupper($req->input('mother_name')),

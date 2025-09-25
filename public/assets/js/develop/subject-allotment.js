@@ -22,7 +22,7 @@ function handleGroupDropdown(row) {
 
         // Add remove button
         newRow.append(`
-            <div class="col-md-1 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end mt-2">
                 <button type="button" class="btn btn-sm btn-danger remove-row">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -61,8 +61,8 @@ function handleGroupDropdown(row) {
 
                     // Add remove button
                     newRow.append(`
-                        <div class="col-md-1 d-flex align-items-end">
-                            <button type="button" class="btn btn-sm btn-danger remove-row" data-id="${allot.id}">
+                        <div class="col-md-1 d-flex align-items-end mt-2">
+                            <button type="button" class="btn btn-sm btn-danger remove-row " data-id="${allot.id}">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </div>

@@ -27,7 +27,7 @@
                                 <div class="col-xxl">
                                     <div class="card mb-4">
                                         <div class="card-header d-flex align-items-center justify-content-between">
-                                            <h5>Edit Subject Allotments for {{ $teacher->name }}</h5>
+                                            <h5 class="p-2">Edit Subject Allotments for {{ $teacher->name }}</h5>
                                         </div>
                                         <div class="container">
                                             <form id="allotment-form" action="{{ url('/update-subject-allotment') }}" method="POST">
@@ -38,7 +38,7 @@
                                                     <div class="row mb-3 assignment-row">
                                                         <input type="hidden" name="allotment_ids[]" value="{{ $allotment->id }}">
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Class</label>
                                                             <select name="class_ids[]" class="form-select class-select" required>
                                                                 <option value="">-- Select Class --</option>
@@ -51,7 +51,7 @@
 
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Group Name</label>
                                                             <select name="shortname_ids[]" class="form-select group-select" {{ ($allotment->standard == 11 || $allotment->standard == 12) ? '' : 'disabled' }}>
                                                                 <option value="">-- Select Group --</option>
@@ -68,7 +68,7 @@
 
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Subjects</label>
                                                             <select class="form-select" name="subject_ids[]" required>
                                                                 <option value="">-- Select Subject --</option>
@@ -80,7 +80,7 @@
                                                             </select>
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Section</label>
                                                             <select name="sections[]" class="form-select" required>
                                                                 <option value="">-- Select Section --</option>
@@ -91,7 +91,7 @@
                                                             </select>
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Teacher Type</label>
                                                             <select name="teacher_types[]" class="form-select" required>
                                                                 <option value="">-- Select Type --</option>
@@ -100,21 +100,22 @@
                                                             </select>
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="form-label">Academic Year</label>
                                                             <input type="text" class="form-control" placeholder="____-____" name="academic_years[]" value="{{ $allotment->academic_year }}" required />
                                                         </div>
 
-                                                        <div class="col-md-1 d-flex align-items-end">
+                                                        <div class="col-md-1 d-flex align-items-end mt-2">
                                                             <button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa-solid fa-xmark"></i></button>
                                                         </div> 
                                                     </div>
                                                     @endforeach
-                                                </div>
+                                                    <div class="col-md-3">
+                                                    <button type="button" class="btn btn-sm btn-success mb-3" id="add-row"><i class="fas fa-plus"></i></button>
 
-                                                <button type="button" class="btn btn-sm btn-success mb-3" id="add-row"><i class="fas fa-plus"></i></button>
-                                                <br>
-                                                <button type="submit" class="btn btn-sm btn-primary mb-4">Update Allotments</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary mb-3">Update Allotments</button>
+                                                    </div>
+                                                </div>
                                             </form>
                                         </div>
                                     </div>
@@ -129,6 +130,6 @@
             @include('admin.includes.floatmsg')
             @include('admin.includes.formjs')
             <script src="{{url('public/assets/js/develop/subjectallotmentEditandList.js')}}" type="text/javascript"></script>
-           
+
     </body>
 </html>
