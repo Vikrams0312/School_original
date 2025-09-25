@@ -39,7 +39,7 @@
                                     <form method="GET" action="{{ url('/student-list') }}">
                                         <div class="row mb-3">
                                             <!-- Standard Dropdown -->
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label for="standard" class="form-label">Class</label>
                                                 <select name="standard" id="standard" class="form-select">
                                                     @foreach($standards as $std)
@@ -50,7 +50,7 @@
                                                 </select>
                                             </div>
                                             <!-- Section Dropdown -->
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label for="section" class="form-label">Section</label>
                                                 <select name="section" id="section" class="form-select">
                                                     @foreach($sections as $sec)
@@ -142,7 +142,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>{{$d->register_number}}</td>
+                                                    <td>{{$d->enrollno}}</td>
                                                     <td>{{$d->name}}</td>
                                                     <td>{{$d->father_name}}</td>
                                                     <td>{{$d->mother_name}}</td>
