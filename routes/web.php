@@ -36,9 +36,15 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::get('/delete-exams/{id}', [AdminController::class, 'deleteExams']);
 
     // mark
+    // web.php
+    Route::get('/get-standards/{exam_id}', [AdminController::class, 'getStandards']);
+    Route::get('/get-sections/{standard}/{group?}', [AdminController::class, 'getSectionsByStandard']);
+    Route::get('/get-subjects/{standard}/{group?}/{section?}', [AdminController::class, 'getSubjectsByFilter']);
+Route::get('/get-students/{standard}/{group?}/{section?}', [AdminController::class, 'getStudentsByClass']);
+
     Route::get('/marktable', [AdminController::class, 'marktablepage']);
     Route::post('/create-mark-table', [AdminController::class, 'createMarkTable']);
-    Route::get('/mark-entry', [AdminController::class,'markEntry']);
+    Route::get('/mark-entry', [AdminController::class, 'markEntry']);
     //subject
     Route::get('/create-subject', [AdminController::class, 'subjectForm']);
     Route::post('/save-subject', [AdminController::class, 'createSubject']);

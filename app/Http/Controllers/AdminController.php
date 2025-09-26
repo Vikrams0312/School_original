@@ -53,39 +53,171 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
+ public function getStudentsByClass($standard, $group = null, $section = null)
+{
+    $teacher_id = session('user_id');
 
-  public function markEntry() {
-    $teacher_id = session('user_id'); // or auth()->id()
-
-    // Get teacher's subject allotments
+    // Get teacher's allotments for the selected standard/group/section
     $allotments = DB::table('subject_allotments')
-            ->where('teacher_id', $teacher_id)
-            ->select('standard', 'group_name_id', 'section', 'subject_id')
-            ->distinct()
-            ->get();
+        ->where('teacher_id', $teacher_id)
+        ->where('standard', $standard);
 
-    // Extract dropdown values without default selection
-    $standards = $allotments->pluck('standard')->unique()->sortDesc()->values();
-    $sections = $allotments->pluck('section')->unique()->values();
-    $groups = $allotments->pluck('group_name_id')->unique()->filter()->values();
-    $subjects = $allotments->pluck('subject_id')->unique();
+    if ($group && $group != 'NoSection') {
+        $allotments->where('group_name_id', $group);
+    }
 
-    // Fetch group & subject list for dropdowns
-    $group_list = DB::table('groups')->whereIn('id', $groups)->get();
-    $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+    if ($section && $section != 'NoSection') {
+        $allotments->where('section', $section);
+    }
 
-    $exams = DB::table('exams')->get();
+    // Get allowed sections/groups for teacher
+    $allowedGroups = $allotments->pluck('group_name_id')->unique()->values();
+    $allowedSections = $allotments->pluck('section')->unique()->values();
 
-    return view('admin/mark/mark-entry', compact(
-        'standards', 
-        'sections', 
-        'groups', 
-        'subjects', 
-        'group_list', 
-        'subject_list', 
-        'exams'
-    ));
+    // Fetch students in standard/section/group
+    $studentsQuery = DB::table('students')
+        ->where('standard', $standard);
+
+    if ($group && $group != 'NoSection') {
+        $studentsQuery->whereIn('group_id', $allowedGroups);
+    }
+
+    if ($section && $section != 'NoSection') {
+        $studentsQuery->whereIn('section', $allowedSections);
+    }
+
+    $students = $studentsQuery->select('id', 'enrollno', 'name')->get();
+
+    return response()->json($students);
 }
+
+    public function getSubjectsByFilter($standard, $group = null, $section = null) {
+        $teacher_id = session('user_id'); // or auth()->id()
+
+        $query = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->where('standard', $standard);
+
+        // Only apply group filter if standard is 11 or 12
+        if (in_array($standard, [11, 12]) && $group) {
+            $query->where('group_name_id', $group);
+        }
+
+        // Apply section filter if provided
+        if ($section) {
+            $query->where('section', $section);
+        }
+
+        $subjects = $query->pluck('subject_id')->unique()->values();
+
+        // Fetch subject names
+        $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+
+        return response()->json($subject_list);
+    }
+
+    public function getSectionsByStandard($standard, $group = null) {
+        $teacher_id = session('user_id'); // or auth()->id()
+
+        $query = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->where('standard', $standard);
+
+        // For standards 11 & 12, filter by group if provided
+        if (in_array($standard, [11, 12]) && $group) {
+            $query->where('group_name_id', $group);
+        }
+
+        $sections = $query->pluck('section')
+                ->unique()
+                ->values();
+
+        return response()->json($sections);
+    }
+
+    public function getStandards($exam_id) {
+        $teacher_id = session('user_id');
+
+        // Get exam_name for this exam_id
+        $exam_name = DB::table('exams')->where('id', $exam_id)->value('exam_name');
+
+        // Standards for this exam_name
+        $exam_standards = DB::table('exams')
+                ->where('exam_name', $exam_name)
+                ->pluck('standard');
+
+        // Teacher's standards
+        $teacher_standards = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->pluck('standard')
+                ->unique();
+
+        // Intersection
+        $standards = $teacher_standards->intersect($exam_standards)->sort()->values();
+
+        return response()->json($standards);
+    }
+
+    public function markEntry(Request $request) {
+        $teacher_id = session('user_id');
+
+        // Teacher's subject allotments
+        $allotments = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->select('standard', 'group_name_id', 'section', 'subject_id')
+                ->distinct()
+                ->get();
+
+        // Exams list: unique exam names + first id
+        $exams = DB::table('exams')
+                ->selectRaw('MIN(id) as id, exam_name')
+                ->groupBy('exam_name')
+                ->orderBy('id')
+                ->get();
+        $Academic_year=DB::table('exams')
+                ->select('academic_year')
+                ->distinct()
+                ->get();
+        $exam_id = $request->get('exams');
+        $exam_standards = collect();
+
+        if ($exam_id) {
+            // Get the exam_name of the selected exam
+            $exam_name = DB::table('exams')->where('id', $exam_id)->value('exam_name');
+
+            // Fetch all standards for that exam_name
+            $exam_standards = DB::table('exams')
+                    ->where('exam_name', $exam_name)
+                    ->pluck('standard');
+        }
+
+        // Teacher’s standards
+        $teacher_standards = $allotments->pluck('standard')->unique();
+
+        // Final standards = teacher ∩ exam
+        $standards = $teacher_standards;
+        if ($exam_standards->isNotEmpty()) {
+            $standards = $teacher_standards->intersect($exam_standards)->sort()->values();
+        }
+
+        $sections = $allotments->pluck('section')->unique()->values();
+        $groups = $allotments->pluck('group_name_id')->unique()->filter()->values();
+        $subjects = $allotments->pluck('subject_id')->unique();
+
+        $group_list = DB::table('groups')->whereIn('id', $groups)->get();
+        $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+
+        return view('admin/mark/mark-entry', compact(
+                        'standards',
+                        'sections',
+                        'groups',
+                        'subjects',
+                        'group_list',
+                        'subject_list',
+                        'exams',
+                        'Academic_year'
+        ));
+    }
 
     public function createMarkTable(Request $request) {
         $standard = $request->input('standard');

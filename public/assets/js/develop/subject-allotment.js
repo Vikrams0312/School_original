@@ -12,25 +12,31 @@ function handleGroupDropdown(row) {
 
 
     // Add row function
-    function addAssignmentRow() {
-        let newRow = $('#row-template').clone().removeClass('d-none').removeAttr('id');
-        newRow.find('select').prop('required', true);
-        newRow.find('input[type="hidden"]').remove();
+function addAssignmentRow() {
+    let newRow = $('#row-template').clone().removeClass('d-none').removeAttr('id');
 
-        // Handle Group for default/new row
-        handleGroupDropdown(newRow);
+    // Make all selects required
+    newRow.find('select').prop('required', true);
 
-        // Add remove button
-        newRow.append(`
-            <div class="col-md-1 d-flex align-items-end mt-2">
-                <button type="button" class="btn btn-sm btn-danger remove-row">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        `);
+    // Remove required from Group dropdown
+    newRow.find('select[name="shortname_ids[]"]').prop('required', false);
 
-        $('#assignment-rows').append(newRow);
-    }
+    newRow.find('input[type="hidden"]').remove();
+
+    // Handle Group for default/new row
+    handleGroupDropdown(newRow);
+
+    // Add remove button
+    newRow.append(`
+        <div class="col-md-1 d-flex align-items-end mt-2">
+            <button type="button" class="btn btn-sm btn-danger remove-row">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    `);
+
+    $('#assignment-rows').append(newRow);
+}
 
     // Teacher change → load allotments
     $('#teacher-select').on('change', function () {
