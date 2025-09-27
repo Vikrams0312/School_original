@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AdminController extends Controller {
-
+    
     //  login
     public function logout(Request $request) {
         $request->session()->flush();
@@ -53,6 +53,61 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
+    public function saveMark(Request $request)
+{
+    $tableName   = $request->input('table_name');   // e.g. mark_12_mpcc_2025_2026
+    $subject     = $request->input('subject');      // e.g. physics
+    $examId      = $request->input('exam_id');
+    $standard    = $request->input('standard');
+    $section     = $request->input('section');
+    $marks       = $request->input('marks');        // student_id => mark
+
+    foreach ($marks as $studentId => $mark) {
+        $student = DB::table('students')->find($studentId);
+
+        // Insert or update subject mark
+        DB::table($tableName)->updateOrInsert(
+            [
+                'enrollno' => $student->enrollno,
+                'exam_id'  => $examId,
+            ],
+            [
+                'standard'    => $standard,
+                'section'     => $section,
+                $subject      => $mark,
+                'updated_at'  => now(),
+            ]
+        );
+
+        // Now recalc total for this student
+        $row = DB::table($tableName)
+            ->where('enrollno', $student->enrollno)
+            ->where('exam_id', $examId)
+            ->first();
+
+        if ($row) {
+            // Get all numeric columns except id, enrollno, standard, section, exam_id, etc.
+            $columns = Schema::getColumnListing($tableName);
+            $subjectColumns = array_diff($columns, [
+                'id','enrollno','standard','section','exam_id',
+                'total','student_rank','updated_at','editing_status'
+            ]);
+
+            $total = 0;
+            foreach ($subjectColumns as $col) {
+                $total += (int) $row->$col;
+            }
+
+            DB::table($tableName)
+                ->where('enrollno', $student->enrollno)
+                ->where('exam_id', $examId)
+                ->update(['total' => $total]);
+        }
+    }
+
+    return response()->json(['success' => true]);
+}
+
  public function getStudentsByClass($standard, $group = null, $section = null)
 {
     $teacher_id = session('user_id');

@@ -36,7 +36,7 @@ Route::middleware(['loginAuth'])->group(function () {
     Route::get('/delete-exams/{id}', [AdminController::class, 'deleteExams']);
 
     // mark
-    // web.php
+    Route::post('/save-mark', [AdminController::class, 'saveMark']);
     Route::get('/get-standards/{exam_id}', [AdminController::class, 'getStandards']);
     Route::get('/get-sections/{standard}/{group?}', [AdminController::class, 'getSectionsByStandard']);
     Route::get('/get-subjects/{standard}/{group?}/{section?}', [AdminController::class, 'getSubjectsByFilter']);
