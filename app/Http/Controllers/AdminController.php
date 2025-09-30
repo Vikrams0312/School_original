@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AdminController extends Controller {
-    
+
     //  login
     public function logout(Request $request) {
         $request->session()->flush();
@@ -53,98 +53,149 @@ class AdminController extends Controller {
     public function dashboard() {
         return view('admin/login/dashboard');
     }
-    public function saveMark(Request $request)
-{
-    $tableName   = $request->input('table_name');   // e.g. mark_12_mpcc_2025_2026
-    $subject     = $request->input('subject');      // e.g. physics
-    $examId      = $request->input('exam_id');
-    $standard    = $request->input('standard');
-    $section     = $request->input('section');
-    $marks       = $request->input('marks');        // student_id => mark
 
-    foreach ($marks as $studentId => $mark) {
-        $student = DB::table('students')->find($studentId);
+    public function saveMark(Request $request) {
+        $tableName = $request->input('table_name');   // e.g. mark_12_mpcc_2025_2026
+        $subject = $request->input('subject');      // e.g. physics
+        $examId = $request->input('exam_id');
+        $standard = $request->input('standard');
+        $section = $request->input('section');
+        $marks = $request->input('marks');        // student_id => mark
 
-        // Insert or update subject mark
-        DB::table($tableName)->updateOrInsert(
-            [
-                'enrollno' => $student->enrollno,
-                'exam_id'  => $examId,
-            ],
-            [
-                'standard'    => $standard,
-                'section'     => $section,
-                $subject      => $mark,
-                'updated_at'  => now(),
-            ]
-        );
+        foreach ($marks as $studentId => $mark) {
+            $student = DB::table('students')->find($studentId);
 
-        // Now recalc total for this student
-        $row = DB::table($tableName)
-            ->where('enrollno', $student->enrollno)
-            ->where('exam_id', $examId)
-            ->first();
+            // Insert or update subject mark
+            DB::table($tableName)->updateOrInsert(
+                    [
+                        'enrollno' => $student->enrollno,
+                        'exam_id' => $examId,
+                    ],
+                    [
+                        'standard' => $standard,
+                        'section' => $section,
+                        $subject => $mark,
+                        'updated_at' => now(),
+                    ]
+            );
 
-        if ($row) {
-            // Get all numeric columns except id, enrollno, standard, section, exam_id, etc.
-            $columns = Schema::getColumnListing($tableName);
-            $subjectColumns = array_diff($columns, [
-                'id','enrollno','standard','section','exam_id',
-                'total','student_rank','updated_at','editing_status'
-            ]);
+            // Now recalc total for this student
+            $row = DB::table($tableName)
+                    ->where('enrollno', $student->enrollno)
+                    ->where('exam_id', $examId)
+                    ->first();
 
-            $total = 0;
-            foreach ($subjectColumns as $col) {
-                $total += (int) $row->$col;
+            if ($row) {
+                // Get all numeric columns except id, enrollno, standard, section, exam_id, etc.
+                $columns = Schema::getColumnListing($tableName);
+                $subjectColumns = array_diff($columns, [
+                    'id', 'enrollno', 'standard', 'section', 'exam_id',
+                    'total', 'student_rank', 'updated_at', 'editing_status'
+                ]);
+
+                $total = 0;
+                foreach ($subjectColumns as $col) {
+                    $total += (int) $row->$col;
+                }
+
+                DB::table($tableName)
+                        ->where('enrollno', $student->enrollno)
+                        ->where('exam_id', $examId)
+                        ->update(['total' => $total]);
             }
+        }
 
-            DB::table($tableName)
-                ->where('enrollno', $student->enrollno)
-                ->where('exam_id', $examId)
-                ->update(['total' => $total]);
+        return response()->json(['success' => true]);
+    }
+
+ private function generateMarksTable($students, $subject_name) {
+    $html = '<h3 class="mb-3 text-center">' . htmlspecialchars($subject_name) . ' Mark Entry</h3>';
+    
+    // ✅ second form starts here
+    $html .= '<form method="POST" action="' . url('save-marks') . '">';
+    $html .= csrf_field();
+
+    // Hidden fields to keep exam/subject info
+    $html .= '<input type="hidden" name="exam" value="' . request('exam') . '">';
+    $html .= '<input type="hidden" name="standard" value="' . request('standard') . '">';
+    $html .= '<input type="hidden" name="group" value="' . request('group') . '">';
+    $html .= '<input type="hidden" name="section" value="' . request('section') . '">';
+    $html .= '<input type="hidden" name="subject" value="' . request('subject') . '">';
+    $html .= '<input type="hidden" name="academic_year" value="' . request('academic_year') . '">';
+
+    $html .= '<div class="table-responsive"><table class="table table-bordered table-sm">';
+    $html .= '<thead class="table-light"><tr>
+                <th>Enroll.NO</th>
+                <th>Name</th>
+                <th>Mark</th>
+              </tr></thead><tbody>';
+
+    if ($students->isEmpty()) {
+        $html .= '<tr><td colspan="3" class="text-center">No students found for this selection.</td></tr>';
+    } else {
+        foreach ($students as $student) {
+            $html .= '<tr>
+                        <td>' . $student->enrollno . '</td>
+                        <td>' . $student->name . '</td>
+                        <td>
+                            <select class="mySelect" style="width:200px;" 
+                                    name="marks[' . $student->id . ']">
+                                <option></option>
+                                <option value="-1">Absent</option>
+                            </select>
+                        </td>
+                      </tr>';
         }
     }
 
-    return response()->json(['success' => true]);
+    $html .= '</tbody></table></div>';
+
+    // ✅ Save button for marks
+    $html .= '<div class="mt-3 text-center">
+                <button type="submit" class="btn btn-success">Save Marks</button>
+              </div>';
+
+    $html .= '</form>'; // end second form
+
+    return $html;
 }
 
- public function getStudentsByClass($standard, $group = null, $section = null)
-{
-    $teacher_id = session('user_id');
+    public function getStudentsByClass($standard, $group = null, $section = null) {
+        $teacher_id = session('user_id');
 
-    // Get teacher's allotments for the selected standard/group/section
-    $allotments = DB::table('subject_allotments')
-        ->where('teacher_id', $teacher_id)
-        ->where('standard', $standard);
+        // Get teacher's allotments for the selected standard/group/section
+        $allotments = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->where('standard', $standard);
 
-    if ($group && $group != 'NoSection') {
-        $allotments->where('group_name_id', $group);
+        if ($group && $group != 'NoSection') {
+            $allotments->where('group_name_id', $group);
+        }
+
+        if ($section && $section != 'NoSection') {
+            $allotments->where('section', $section);
+        }
+
+        // Get allowed sections/groups for teacher
+        $allowedGroups = $allotments->pluck('group_name_id')->unique()->values();
+        $allowedSections = $allotments->pluck('section')->unique()->values();
+
+        // Fetch students in standard/section/group
+        $studentsQuery = DB::table('students')
+                ->where('standard', $standard);
+
+        if ($group && $group != 'NoSection') {
+            $studentsQuery->whereIn('group_id', $allowedGroups);
+        }
+
+        if ($section && $section != 'NoSection') {
+            $studentsQuery->whereIn('section', $allowedSections);
+        }
+
+        $students = $studentsQuery->select('id', 'enrollno', 'name')->get();
+
+        return response()->json($students);
     }
-
-    if ($section && $section != 'NoSection') {
-        $allotments->where('section', $section);
-    }
-
-    // Get allowed sections/groups for teacher
-    $allowedGroups = $allotments->pluck('group_name_id')->unique()->values();
-    $allowedSections = $allotments->pluck('section')->unique()->values();
-
-    // Fetch students in standard/section/group
-    $studentsQuery = DB::table('students')
-        ->where('standard', $standard);
-
-    if ($group && $group != 'NoSection') {
-        $studentsQuery->whereIn('group_id', $allowedGroups);
-    }
-
-    if ($section && $section != 'NoSection') {
-        $studentsQuery->whereIn('section', $allowedSections);
-    }
-
-    $students = $studentsQuery->select('id', 'enrollno', 'name')->get();
-
-    return response()->json($students);
-}
 
     public function getSubjectsByFilter($standard, $group = null, $section = null) {
         $teacher_id = session('user_id'); // or auth()->id()
@@ -229,7 +280,7 @@ class AdminController extends Controller {
                 ->groupBy('exam_name')
                 ->orderBy('id')
                 ->get();
-        $Academic_year=DB::table('exams')
+        $Academic_year = DB::table('exams')
                 ->select('academic_year')
                 ->distinct()
                 ->get();
@@ -261,7 +312,28 @@ class AdminController extends Controller {
 
         $group_list = DB::table('groups')->whereIn('id', $groups)->get();
         $subject_list = DB::table('subjects')->whereIn('id', $subjects)->get();
+        $marks_table = '';
 
+        if ($request->filled(['standard', 'subject'])) {
+            $standard = $request->standard;
+            $group = $request->group ?? null;
+            $section = $request->section ?? null;
+            $subject_id = $request->subject;
+
+            // Fetch students
+            $studentsQuery = DB::table('students')->where('standard', $standard);
+            if ($group && $group != 'NoSection')
+                $studentsQuery->where('group_id', $group);
+            if ($section && $section != 'NoSection')
+                $studentsQuery->where('section', $section);
+
+            $students = $studentsQuery->select('id', 'enrollno', 'name')->get();
+
+            $subject_name = DB::table('subjects')->where('id', $subject_id)->value('subject_name');
+
+            // Generate table
+            $marks_table = $this->generateMarksTable($students, $subject_name);
+        }
         return view('admin/mark/mark-entry', compact(
                         'standards',
                         'sections',
@@ -270,7 +342,8 @@ class AdminController extends Controller {
                         'group_list',
                         'subject_list',
                         'exams',
-                        'Academic_year'
+                        'Academic_year',
+                        'marks_table'
         ));
     }
 
