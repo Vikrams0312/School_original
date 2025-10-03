@@ -60,32 +60,35 @@ class AdminController extends Controller {
         $group = $request->input('group');
         $section = $request->input('section');
         $subject_id = $request->input('subject');
-        $subject = DB::table('subjects')
-                ->where('id', $subject_id)
-                ->value('subject_name');   // or whatever column name you store as group name
 
-        $academic_year = $request->input('academic_year');
-        $marks = $request->input('marks');     // student_id => mark
-        $groupName = DB::table('groups')
-                ->where('id', $group)
-                ->value('group_short_name');   // or whatever column name you store as group name
-        $groupName = strtolower($groupName);
-        $tableName = "mark_" . $standard . "_" . $groupName . "_" . $academic_year;
-        $academic_year = str_replace('-', '_', $academic_year);
+        // subject column (normalize to your naming convention)
+        $subjectName = DB::table('subjects')->where('id', $subject_id)->value('subject_name');
+        $subjectColumn = strtolower(str_replace(' ', '_', $subjectName));
 
-        // ✅ Decide table name
+        // sanitize academic year BEFORE building table name
+        $academic_year = str_replace('-', '_', $request->input('academic_year'));
+
+        $marks = $request->input('marks', []); // student_id => mark
+
+        $groupName = DB::table('groups')->where('id', $group)->value('group_short_name');
+        $groupName = strtolower($groupName ?: '');
+
+        // decide table name
         if ((int) $standard <= 10) {
             $tableName = "mark_{$standard}_{$academic_year}";
         } else {
             $tableName = "mark_{$standard}_{$groupName}_{$academic_year}";
         }
 
+        // list of columns we exclude when summing totals
+        $excluded = ['id', 'enrollno', 'standard', 'section', 'exam_id', 'total', 'student_rank', 'updated_at', 'editing_status', 'created_at'];
+
         foreach ($marks as $studentId => $mark) {
             $student = DB::table('students')->find($studentId);
             if (!$student)
                 continue;
 
-            // ✅ Insert or update only the subject column
+            // Update/Insert subject mark (this will create or update the latest row)
             DB::table($tableName)->updateOrInsert(
                     [
                         'enrollno' => $student->enrollno,
@@ -94,41 +97,81 @@ class AdminController extends Controller {
                     [
                         'standard' => $standard,
                         'section' => $section,
-                        $subject => $mark, // ✅ Only this subject changes
+                        $subjectColumn => $mark,
                         'updated_at' => now(),
                     ]
             );
 
-            // ✅ Recalculate total for this student
+            // Fetch the most recent row for this student+exam (avoid selecting an old duplicate)
             $row = DB::table($tableName)
                     ->where('enrollno', $student->enrollno)
                     ->where('exam_id', $examId)
+                    ->orderByDesc('updated_at')
+                    ->orderByDesc('id')
                     ->first();
 
-            if ($row) {
-                $columns = Schema::getColumnListing($tableName);
+            if (!$row)
+                continue;
 
-                // take only subject columns
-                $subjectColumns = array_diff($columns, [
-                    'id', 'enrollno', 'standard', 'section', 'exam_id',
-                    'total', 'student_rank', 'updated_at', 'editing_status', 'created_at'
-                ]);
+            // Get columns and determine subject columns (exclude known meta columns)
+            $columns = Schema::getColumnListing($tableName);
+            $subjectColumns = array_values(array_diff($columns, $excluded));
 
-                $total = 0;
-                foreach ($subjectColumns as $col) {
-                    if (!is_null($row->$col)) {
-                        $total += (int) $row->$col;
+            // Sum only valid subject marks (numeric AND >= 0). Skip null/empty/'NULL' and -1 (absent).
+            $total = 0;
+            foreach ($subjectColumns as $col) {
+                // protect against properties not present on the row object
+                $val = property_exists($row, $col) ? $row->$col : null;
+
+                if ($val === null)
+                    continue;
+                if (is_string($val) && trim($val) === '')
+                    continue;
+                // some DB exports may have string 'NULL'
+                if (is_string($val) && strtolower(trim($val)) === 'null')
+                    continue;
+                // only add numeric and non-negative values (treat -1 as absent marker -> skip)
+                if (is_numeric($val)) {
+                    $num = (int) $val;
+                    if ($num >= 0) {
+                        $total += $num;
                     }
                 }
-
-                DB::table($tableName)
-                        ->where('enrollno', $student->enrollno)
-                        ->where('exam_id', $examId)
-                        ->update(['total' => $total]);
             }
+
+            // Update total for this exact row (use id to avoid touching other duplicates)
+            DB::table($tableName)
+                    ->where('id', $row->id)
+                    ->update(['total' => $total]);
         }
 
-        return redirect()->back()->withInput()->with('success', 'Marks saved successfully!');
+        // ----- DENSE RANKING -----
+        $allStudents = DB::table($tableName)
+                ->where('exam_id', $examId)
+                ->where('standard', $standard)
+                ->where('section', $section)
+                ->orderByDesc('total')
+                ->orderBy('enrollno') // deterministic ordering
+                ->get();
+
+        $rank = 0;
+        $prevTotal = null;
+
+        foreach ($allStudents as $stu) {
+            $currentTotal = is_null($stu->total) ? 0 : (int) $stu->total;
+
+            if ($prevTotal === null || $currentTotal !== $prevTotal) {
+                $rank++;
+            }
+
+            DB::table($tableName)
+                    ->where('id', $stu->id)
+                    ->update(['student_rank' => $rank]);
+
+            $prevTotal = $currentTotal;
+        }
+
+        return redirect()->back()->withInput()->with('success', 'Marks & ranks saved successfully!');
     }
 
     private function generateMarksTable($students, $subject_name, $examId, $standard, $group, $section, $academic_year) {
@@ -146,7 +189,13 @@ class AdminController extends Controller {
             $tableName = "mark_{$standard}_{$groupName}_{$academic_year_safe}";
         }
 
-        $html = '<h3 class="mb-3 text-center">' . htmlspecialchars($subject_name) . ' Mark Entry</h3>';
+        $html = "<h3 class='mb-3 text-center'>"
+                
+                . e($standard) . " "
+                . e($section)."-"
+                . e(strtoupper($subject_name))
+                . " MARK ENTRY</h3>";
+
         $html .= '<form method="POST" action="' . url('save-marks') . '">';
         $html .= csrf_field();
 

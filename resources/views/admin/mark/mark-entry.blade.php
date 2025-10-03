@@ -29,7 +29,7 @@
                         <!-- Content -->
                         <div class="container-xxl flex-grow-1 container-p-y">
                             <div class="card">
-                                <h5 class="card-header">Mark Entry</h5>
+                                <h5 class="card-header">MARK ENTRY</h5>
                                 <div class="card-body">
                                     <form id="markEntryForm" method="POST" action="{{ url('mark-entry') }}">
                                         @csrf
@@ -51,7 +51,7 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label for="group" class="form-label">Group</label>
-                                                <select name="group" id="group" class="form-select">
+                                                <select name="group" id="group" class="form-select" required="">
                                                     <option value="">Select Group</option>
                                                     @foreach($group_list as $grp)
                                                     <option value="{{ $grp->id }}">{{ $grp->group_short_name }}</option>
@@ -60,19 +60,19 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Section</label>
-                                                <select class="form-control" name="section" id="section">
+                                                <select class="form-control" name="section" id="section" required="">
                                                     <option value="">Select Section</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Subjects</label>
-                                                <select class="form-control" name="subject" id="subject">
+                                                <select class="form-control" name="subject" id="subject" required="">
                                                     <option value="">Select Subject</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
                                                 <label for="academic_year" class="form-label">Academic Year</label>
-                                                <select name="academic_year" id="academic_year" class="form-select">
+                                                <select name="academic_year" id="academic_year" class="form-select" required="">
                                                     @foreach($Academic_year as $year)
                                                     <option value="{{ $year->academic_year }}">{{ $year->academic_year }}</option>
                                                     @endforeach
