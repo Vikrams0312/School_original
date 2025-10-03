@@ -5,9 +5,9 @@
         <group>
             <file>file:/D:/xampp/htdocs/erm/resources/views/admin/mark/mark-entry.blade.php</file>
             <file>file:/D:/xampp/htdocs/erm/resources/views/admin/student/retrive-student.blade.php</file>
-            <file>file:/D:/xampp/htdocs/erm/resources/views/admin/includes/menu.blade.php</file>
             <file>file:/D:/xampp/htdocs/erm/routes/web.php</file>
             <file>file:/D:/xampp/htdocs/erm/app/Http/Controllers/AdminController.php</file>
+            <file>file:/D:/xampp/htdocs/erm/resources/views/admin/mark/marktable.blade.php</file>
             <file>file:/D:/xampp/htdocs/erm/public/assets/js/develop/school.js</file>
         </group>
     </open-files>
