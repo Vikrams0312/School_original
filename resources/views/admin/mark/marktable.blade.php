@@ -149,8 +149,9 @@
         <!-- Core JS -->
         @include('admin.includes.formjs')
       
-
-
+<script>
+    initMarkEntryScript("{{ url('') }}");
+</script>
 
     </body>
 </html>

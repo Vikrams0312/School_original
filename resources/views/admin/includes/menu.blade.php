@@ -108,6 +108,11 @@ $url_segment = Request::segment(1);
                 <div data-i18n="Markentry"> Mark Entry</div>
             </a>
         </li>
-       
+       <li class="menu-item {{ $url_segment == 'mark-sheet' ? 'active' : '' }}">
+            <a href="{{ url('/mark-sheet') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-id-card"></i>
+                <div data-i18n="Marksheet"> Mark sheet</div>
+            </a>
+        </li>
     </ul>
 </aside>

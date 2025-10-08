@@ -285,10 +285,10 @@
             });
             $('.mySelect').select2({
                 tags: true, // allows custom values
-                placeholder: "Enter mark", // ✅ your custom placeholder
+                placeholder: "Enter mark" // ✅ your custom placeholder
                 //allowClear: true     
             });
-            // ✅ Force cursor to go into text box when opened
+  
             $('.mySelect').on('select2:open', function () {
                 setTimeout(() => {
                     document.querySelector('.select2-container--open .select2-search__field').focus();

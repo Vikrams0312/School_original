@@ -54,6 +54,66 @@ class AdminController extends Controller {
         return view('admin/login/dashboard');
     }
 
+public function marksheet(Request $request) {
+    $examId = $request->input('exam');
+    $standard = $request->input('standard');
+    $group = $request->input('group') ?? null;
+    $section = $request->input('section');
+    $academic_year = str_replace('-', '_', $request->input('academic_year'));
+
+    $teacher_id = session('user_id');
+
+    $exams = DB::table('exams')
+            ->selectRaw('MIN(id) as id, exam_name')
+            ->groupBy('exam_name')
+            ->orderBy('id')
+            ->get();
+
+    $Academic_year = DB::table('exams')
+            ->select('academic_year')
+            ->distinct()
+            ->get();
+
+    $allotments = DB::table('subject_allotments')
+            ->where('teacher_id', $teacher_id)
+            ->select('standard', 'group_name_id', 'section', 'subject_id')
+            ->distinct()
+            ->get();
+
+    $groups = $allotments->pluck('group_name_id')->unique()->filter()->values();
+    $groups = DB::table('groups')->whereIn('id', $groups)->get();
+
+    $students = collect();
+    $subjects = collect();
+
+    if ($examId && $standard && $section) {
+        $tableName = ($standard <= 10) 
+            ? "mark_{$standard}_{$academic_year}" 
+            : "mark_{$standard}_" . strtolower($group ?? '') . "_{$academic_year}";
+
+        if (\Schema::hasTable($tableName)) {
+            $students = DB::table($tableName . ' as m')
+                        ->join('students as s', 'm.enrollno', '=', 's.enrollno')
+                        ->where('m.exam_id', $examId)
+                        ->where('m.section', $section)
+                        ->orderBy('enrollno')
+                        ->select('m.*', 's.name as student_name')
+                        ->get();
+
+            // Get subject columns dynamically (exclude meta columns)
+            $allColumns = Schema::getColumnListing($tableName);
+            $subjects = collect($allColumns)->diff(['id','enrollno','standard','section','total','student_rank','exam_id','updated_at','editing_status']);
+        }
+    }
+
+    return view('admin.mark.marksheet', compact(
+        'students', 'subjects', 'exams', 'standard', 'groups', 'section', 'Academic_year'
+    ));
+}
+
+
+    
+
     public function saveMark(Request $request) {
         $examId = $request->input('exam');
         $standard = $request->input('standard');
@@ -102,74 +162,36 @@ class AdminController extends Controller {
                     ]
             );
 
-            // Fetch the most recent row for this student+exam (avoid selecting an old duplicate)
-            $row = DB::table($tableName)
-                    ->where('enrollno', $student->enrollno)
-                    ->where('exam_id', $examId)
-                    ->orderByDesc('updated_at')
-                    ->orderByDesc('id')
-                    ->first();
-
-            if (!$row)
-                continue;
-
             // Get columns and determine subject columns (exclude known meta columns)
             $columns = Schema::getColumnListing($tableName);
             $subjectColumns = array_values(array_diff($columns, $excluded));
 
-            // Sum only valid subject marks (numeric AND >= 0). Skip null/empty/'NULL' and -1 (absent).
-            $total = 0;
+            // Build SQL expression for summing subjects (ignores NULL and -1)
+            $markupdates = [];
             foreach ($subjectColumns as $col) {
-                // protect against properties not present on the row object
-                $val = property_exists($row, $col) ? $row->$col : null;
-
-                if ($val === null)
-                    continue;
-                if (is_string($val) && trim($val) === '')
-                    continue;
-                // some DB exports may have string 'NULL'
-                if (is_string($val) && strtolower(trim($val)) === 'null')
-                    continue;
-                // only add numeric and non-negative values (treat -1 as absent marker -> skip)
-                if (is_numeric($val)) {
-                    $num = (int) $val;
-                    if ($num >= 0) {
-                        $total += $num;
-                    }
-                }
+                $markupdates[] = "(CASE WHEN {$col} IS NULL OR {$col} = -1 THEN 0 ELSE {$col} END)";
             }
+            $sumExpression = implode(' + ', $markupdates);
 
-            // Update total for this exact row (use id to avoid touching other duplicates)
+            // Update total directly in DB for this student+exam
             DB::table($tableName)
-                    ->where('id', $row->id)
-                    ->update(['total' => $total]);
+                    ->where('enrollno', $student->enrollno)
+                    ->where('exam_id', $examId)
+                    ->update(['total' => DB::raw($sumExpression)]);
         }
 
         // ----- DENSE RANKING -----
-        $allStudents = DB::table($tableName)
-                ->where('exam_id', $examId)
-                ->where('standard', $standard)
-                ->where('section', $section)
-                ->orderByDesc('total')
-                ->orderBy('enrollno') // deterministic ordering
-                ->get();
-
-        $rank = 0;
-        $prevTotal = null;
-
-        foreach ($allStudents as $stu) {
-            $currentTotal = is_null($stu->total) ? 0 : (int) $stu->total;
-
-            if ($prevTotal === null || $currentTotal !== $prevTotal) {
-                $rank++;
-            }
-
-            DB::table($tableName)
-                    ->where('id', $stu->id)
-                    ->update(['student_rank' => $rank]);
-
-            $prevTotal = $currentTotal;
-        }
+        // Run raw SQL with DENSE_RANK
+        DB::statement("
+    UPDATE {$tableName} AS t
+    JOIN (
+        SELECT id, DENSE_RANK() OVER (PARTITION BY section ORDER BY total DESC) AS rnk
+        FROM {$tableName}
+        WHERE exam_id = ?
+    ) AS ranked
+    ON t.id = ranked.id
+    SET t.student_rank = ranked.rnk
+", [$examId]);
 
         return redirect()->back()->withInput()->with('success', 'Marks & ranks saved successfully!');
     }
@@ -190,9 +212,8 @@ class AdminController extends Controller {
         }
 
         $html = "<h3 class='mb-3 text-center'>"
-                
                 . e($standard) . " "
-                . e($section)."-"
+                . e($section) . "-"
                 . e(strtoupper($subject_name))
                 . " MARK ENTRY</h3>";
 
@@ -210,7 +231,7 @@ class AdminController extends Controller {
         $html .= '<div class="table-responsive"><table class="table table-bordered table-sm">';
         $html .= '<thead class="table-light"><tr>
                 <th>Enroll.NO</th>
-                <th>Name</th>
+                <th class="sticky-col">Name</th>
                 <th>Mark</th>
               </tr></thead><tbody>';
 
@@ -226,7 +247,7 @@ class AdminController extends Controller {
 
                 $html .= '<tr>
                         <td>' . $student->enrollno . '</td>
-                        <td>' . $student->name . '</td>
+                        <td class="sticky-col">' . $student->name . '</td>
                         <td>
                             <select class="mySelect" style="width:200px;" 
                                     name="marks[' . $student->id . ']">';
@@ -235,7 +256,7 @@ class AdminController extends Controller {
                 $html .= '<option></option>';
 
                 // Absent option
-                $html .= '<option value="-1" ' . (($savedMark == -1) ? 'selected' : '') . '>Absent</option>';
+                $html .= '<option value="-1" ' . (($savedMark == -1) ? 'selected' : '') . '>-A-</option>';
 
                 // If mark exists and is numeric
                 if (!is_null($savedMark) && $savedMark != -1) {
