@@ -1,10 +1,8 @@
-
 function initMarkEntryScript(base_url) {
     $(document).ready(function () {
         // Initialize dropdowns
         initMarkEntrySelectors(base_url);
-
-        // Save Marks button
+  // Save Marks button
         $(document).on('click', '#saveMark', function () {
             let marks = {};
             let exam = $('#exam').val();

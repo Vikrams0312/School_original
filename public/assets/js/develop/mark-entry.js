@@ -1,5 +1,3 @@
-
-
 $(document).ready(function () {
     // Initialize dropdowns
     initMarkEntrySelectors(base_url);

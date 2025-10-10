@@ -54,45 +54,63 @@ class AdminController extends Controller {
         return view('admin/login/dashboard');
     }
 
-public function marksheet(Request $request) {
-    $examId = $request->input('exam');
-    $standard = $request->input('standard');
-    $group = $request->input('group') ?? null;
-    $section = $request->input('section');
-    $academic_year = str_replace('-', '_', $request->input('academic_year'));
+    public function marksheet(Request $request) {
+        $examId = $request->input('exam');
+        $standard = $request->input('standard');
+        $group = $request->input('group') ?? null;
+        $section = $request->input('section');
+        $academic_year = str_replace('-', '_', $request->input('academic_year'));
 
-    $teacher_id = session('user_id');
+        $teacher_id = session('user_id');
 
-    $exams = DB::table('exams')
-            ->selectRaw('MIN(id) as id, exam_name')
-            ->groupBy('exam_name')
-            ->orderBy('id')
-            ->get();
+        $exams = DB::table('exams')
+                ->selectRaw('MIN(id) as id, exam_name')
+                ->groupBy('exam_name')
+                ->orderBy('id')
+                ->get();
 
-    $Academic_year = DB::table('exams')
-            ->select('academic_year')
-            ->distinct()
-            ->get();
+        $Academic_year = DB::table('exams')
+                ->select('academic_year')
+                ->distinct()
+                ->get();
 
-    $allotments = DB::table('subject_allotments')
-            ->where('teacher_id', $teacher_id)
-            ->select('standard', 'group_name_id', 'section', 'subject_id')
-            ->distinct()
-            ->get();
+        $allotments = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->select('standard', 'group_name_id', 'section', 'subject_id')
+                ->distinct()
+                ->get();
 
-    $groups = $allotments->pluck('group_name_id')->unique()->filter()->values();
-    $groups = DB::table('groups')->whereIn('id', $groups)->get();
+        $groupIds = $allotments->pluck('group_name_id')->unique()->filter()->values();
+        $groups = DB::table('groups')->whereIn('id', $groupIds)->get();
 
-    $students = collect();
-    $subjects = collect();
+        // --- 🔍 Convert group name to ID ---
+        $group_id = null;
+        if (!empty($group)) {
+            $group_id = DB::table('groups')
+                    ->where('group_short_name', $group)
+                    ->value('id');
+        }
+        
+        $isClassTeacherQuery = DB::table('subject_allotments')
+                ->where('teacher_id', $teacher_id)
+                ->where('standard', $standard)
+                ->where('section', $section)
+                ->where('academic_year', $request->input('academic_year'))
+                ->where('teacher_type', 'CT');
+        if ($standard > 10 && $group_id) {
+            $isClassTeacherQuery->where('group_name_id', $group_id);
+        }
 
-    if ($examId && $standard && $section) {
-        $tableName = ($standard <= 10) 
-            ? "mark_{$standard}_{$academic_year}" 
-            : "mark_{$standard}_" . strtolower($group ?? '') . "_{$academic_year}";
+        $isClassTeacher = $isClassTeacherQuery->exists();
+        
+        $students = collect();
+        $subjects = collect();
 
-        if (\Schema::hasTable($tableName)) {
-            $students = DB::table($tableName . ' as m')
+        if ($examId && $standard && $section) {
+            $tableName = ($standard <= 10) ? "mark_{$standard}_{$academic_year}" : "mark_{$standard}_" . strtolower($group ?? '') . "_{$academic_year}";
+
+            if (\Schema::hasTable($tableName)) {
+                $students = DB::table($tableName . ' as m')
                         ->join('students as s', 'm.enrollno', '=', 's.enrollno')
                         ->where('m.exam_id', $examId)
                         ->where('m.section', $section)
@@ -100,19 +118,16 @@ public function marksheet(Request $request) {
                         ->select('m.*', 's.name as student_name')
                         ->get();
 
-            // Get subject columns dynamically (exclude meta columns)
-            $allColumns = Schema::getColumnListing($tableName);
-            $subjects = collect($allColumns)->diff(['id','enrollno','standard','section','total','student_rank','exam_id','updated_at','editing_status']);
+                // Get subject columns dynamically (exclude meta columns)
+                $allColumns = Schema::getColumnListing($tableName);
+                $subjects = collect($allColumns)->diff(['id', 'enrollno', 'standard', 'section', 'total', 'student_rank', 'exam_id', 'updated_at', 'editing_status']);
+            }
         }
+        // dd($isClassTeacher,$teacher_id,$standard,$section,$request->input('academic_year'),$group_id);
+        return view('admin.mark.marksheet', compact(
+                        'students', 'subjects', 'exams', 'standard', 'groups', 'section', 'Academic_year', 'isClassTeacher'
+        ));
     }
-
-    return view('admin.mark.marksheet', compact(
-        'students', 'subjects', 'exams', 'standard', 'groups', 'section', 'Academic_year'
-    ));
-}
-
-
-    
 
     public function saveMark(Request $request) {
         $examId = $request->input('exam');
@@ -213,6 +228,7 @@ public function marksheet(Request $request) {
 
         $html = "<h3 class='mb-3 text-center'>"
                 . e($standard) . " "
+                . e($groupName) . " "
                 . e($section) . "-"
                 . e(strtoupper($subject_name))
                 . " MARK ENTRY</h3>";

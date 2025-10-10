@@ -53,12 +53,9 @@
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label for="standard" class="form-label">Class</label>
-                                                    <select name="standard" id="standard" class="form-select" required="">
-                                                        <option value="">Select Class</option>
-                                                        @for($i=1;$i<=12;$i++)
-                                                        <option value="{{ $i }}" {{ $standard == $i ? 'selected' : '' }}>{{ $i }}</option>
-                                                        @endfor
+                                                    <label for="standard" class="form-label">Select Standard</label>
+                                                    <select name="standard" class="form-control" id="standard" required>
+                                                        <option value="">-- Select Standard --</option>
                                                     </select>
                                                 </div>
 
@@ -77,13 +74,9 @@
 
 
                                                 <div class="col-md-3">
-                                                    <label for="section" class="form-label">Section</label>
-                                                    <select name="section" id="section" class="form-select" required>
-
-                                                        <option value="No Section">No Section</option>
-                                                        @foreach(range('A', 'G') as $section)
-                                                        <option  value="{{ $section }}">{{ $section }}</option>
-                                                        @endforeach
+                                                    <label class="form-label">Section</label>
+                                                    <select class="form-control" name="section" id="section" required="">
+                                                        <option value="">Select Section</option>
                                                     </select>
                                                 </div>
 
@@ -134,8 +127,15 @@
                                                         @endforeach
                                                     </tbody>
                                                 </table>
-                                            </div>
 
+                                            </div>
+                                            @if($isClassTeacher)
+                                            <div class="text-center mt-3">
+                                                <button class="btn btn-danger" id="freezeMarkBtn">
+                                                    <i class="bx bx-lock-alt me-1"></i> Freeze Marks
+                                                </button>
+                                            </div>
+                                            @endif
                                             @else
                                             <p class="text-center">No records found for selected filters.</p>
                                             @endif
@@ -162,6 +162,8 @@
         @include('admin.includes.floatmsg')
         <!-- Core JS -->
         @include('admin.includes.formjs')
+        <script src="{{url('public/assets/js/develop/marksheet.js')}}" type="text/javascript"></script>
+
     </body>
 </html>
 

@@ -111,5 +111,5 @@
         <!-- Core JS -->
         @include('admin.includes.formjs')
         <script src="{{url('public/assets/js/develop/mark-entry.js')}}" type="text/javascript"></script>
-    </body>
+    < /body>
 </html>
